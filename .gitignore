@@ -1,0 +1,5 @@
+*.xcuserstate
+*.xcbkptlist
+jsonc.xcodeproj/xcuserdata
+jsonc.xcodeproj/project.xcworkspace
+data.json
