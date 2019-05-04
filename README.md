@@ -1,7 +1,7 @@
 # jsonc
 Compress JSON to binary format.
 
-55% smaller and 32% faster.
+50% smaller and 50% faster.
 
 # Format
 
@@ -35,8 +35,11 @@ Compress JSON to binary format.
 | object  | 4      | 0~10,12,13,14,15| 1/2/4/8byte| key1,val1,key2,val2,... |
 
 ## String
-|  Name            | Type   |  ExtType        |  Length/Index   |  Data      |
+|  Name            | Type   |  ExtType        |  Length         |  Data      |
 |------------------|--------|-----------------|-----------------|------------|
 | new string       | 5      | 0~10,12,13,14,15| 1/2/4/8byte     | data       |
-| string by index  | 6      | 0~10,12,13,14,15| 1/2/4/8byte     |            |
 
+## Ref to Pool
+|  Name            | Type   |  ExtType        |  Index          |
+|------------------|--------|-----------------|-----------------|
+| ref              | 6      | 0~10,12,13,14,15| 1/2/4/8byte     |
