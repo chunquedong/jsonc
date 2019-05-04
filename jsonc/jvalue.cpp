@@ -44,16 +44,23 @@ void JCMap::set(Value key, Value val) {
     map[*key.asStr()] = i;
 }
 
-void Value::init() {
+void JCMap::reserve(size_t size) {
+    properties.reserve(size);
+    map.reserve(size);
+}
+
+void Value::init(size_t reserveSize) {
     switch (_type) {
         case Type::String:
             value.str = new std::string();
             break;
         case Type::Array:
             value.array = new JCArray();
+            value.array->reserve(reserveSize);
             break;
         case Type::Object:
             value.map = new JCMap();
+            value.map->reserve(reserveSize);
             break;
         default:
             memset(&value, 0, sizeof value);
@@ -61,8 +68,8 @@ void Value::init() {
     };
 }
 
-Value::Value(Type t) : _type(t) {
-    init();
+Value::Value(Type t, size_t reserveSize) : _type(t) {
+    init(reserveSize);
 }
 
 void Value::free() {
@@ -213,6 +220,26 @@ bool Value::getProp(int i, Value &key, Value &val) {
         }
     }
     return false;
+}
+
+Value Value::clone() {
+    Value n = *this;
+    
+    switch (_type) {
+        case Type::String:
+            n.value.str = new std::string(*value.str);
+            break;
+        case Type::Array:
+            n.value.array = new JCArray(*value.array);
+            break;
+        case Type::Object:
+            n.value.map = new JCMap(*value.map);
+            break;
+        default:
+            break;
+    };
+    
+    return n;
 }
 
 /////////////////////////////////////////////////////

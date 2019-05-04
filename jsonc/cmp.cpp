@@ -164,27 +164,69 @@ static bool tryWriteAsCoords(std::string &str, std::ostream &out) {
     return true;
 }
 */
-void JCWriter::write(Value v, std::ostream &out) {
+void JCWriter::makeStrPool(Value &v) {
     switch (v.type()) {
         case Type::String: {
             std::string &str = *v.asStr();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
-                uint8_t type = jc_stringNew;
-                
-                writeSize(out, type, str.size());
-                
-                //out << str.c_str();
-                out.write(str.data(), str.size());
                 size_t i = stringTable.size();
                 stringTable[str] = i;
-                //puts(str.c_str());
             }
-            else {
-                uint8_t type = jc_stringGet;
-                writeSize(out, type, it->second);
-                //puts("~");
+            break;
+        }
+        case Type::Object: {
+            for (int i=0; i<v.size(); ++i) {
+                Value name;
+                Value val;
+                v.getProp(i, name, val);
+                makeStrPool(name);
+                
+                //set value
+                makeStrPool(val);
             }
+            break;
+        }
+        case Type::Array: {
+            for (int i=0; i<v.size(); ++i) {
+                Value sv = v[i];
+                makeStrPool(sv);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void JCWriter::write(Value &v, std::ostream &out) {
+    makeStrPool(v);
+    int32_t n = (int32_t)stringTable.size();
+    out.write((char*)(&n), 4);
+    
+    for (auto itr = stringTable.begin(); itr != stringTable.end(); ++itr) {
+        const std::string &str = itr->first;
+        uint8_t type = jc_string;
+        writeSize(out, type, str.size());
+        out.write(str.data(), str.size());
+    }
+    
+    writeValue(v, out);
+}
+
+void JCWriter::writeValue(Value &v, std::ostream &out) {
+    switch (v.type()) {
+        case Type::String: {
+            std::string &str = *v.asStr();
+            auto it = stringTable.find(str);
+            if (it == stringTable.end()) {
+                printf("ERROR: miss str pool: %s\n", str.c_str());
+                break;
+            }
+
+            uint8_t type = jc_ref;
+            writeSize(out, type, it->second);
+            //puts("~");
             
             /*
             if (left.size() > 0) {
@@ -200,10 +242,10 @@ void JCWriter::write(Value v, std::ostream &out) {
                 Value name;
                 Value val;
                 v.getProp(i, name, val);
-                write(name, out);
+                writeValue(name, out);
                 
                 //set value
-                write(val, out);
+                writeValue(val, out);
             }
             break;
         }
@@ -211,7 +253,7 @@ void JCWriter::write(Value v, std::ostream &out) {
             writeSize(out, jc_array, v.size());
             for (int i=0; i<v.size(); ++i) {
                 Value sv = v[i];
-                write(sv, out);
+                writeValue(sv, out);
             }
             break;
         }
@@ -298,6 +340,21 @@ Value JCReader::read(std::istream &inStream) {
         return Value();
     }
     
+    int32_t poolSize = 0;
+    inStream.read((char*)(&poolSize), 4);
+    pool.resize(poolSize);
+    for (int32_t i=0; i<poolSize; ++i) {
+        pool[i] = readValue(inStream);
+    }
+    
+    return readValue(inStream);
+}
+
+Value JCReader::readValue(std::istream &inStream) {
+    if (inStream.eof()) {
+        return Value();
+    }
+    
     uint8_t t = 0;
     inStream.read((char*)(&t), 1);
     jc_type type = (jc_type)((t >> 4) & 0xff);
@@ -349,42 +406,40 @@ Value JCReader::read(std::istream &inStream) {
             break;
         }
         case jc_array: {
-            Value value(Type::Array);
             int64_t size = readSize(inStream, type, subType);
+            Value value(Type::Array, size);
             for (int i=0; i<size; ++i) {
-                Value v = read(inStream);
+                Value v = readValue(inStream);
                 value.add(v);
             }
             return value;
             break;
         }
-        case jc_stringNew: {
+        case jc_string: {
             Value value(Type::String);
             int64_t size = readSize(inStream, type, subType);
             std::string *s = value.asStr();
             s->resize(size);
             inStream.read((char*)s->data(), size);
-            stringTable.push_back(*s);
+            //stringTable.push_back(*s);
             //printf("%s\n", s.c_str());
             return value;
             break;
         }
-        case jc_stringGet: {
-            Value Value(Type::String);
+        case jc_ref: {
             int64_t size = readSize(inStream, type, subType);
-            if (size < stringTable.size()) {
-                std::string &s = stringTable[size];
-                *Value.asStr() = s;
+            if (size < pool.size()) {
+                return pool[size].clone();
             }
-            return Value;
+            return Value(Type::Null);
             break;
         }
         case jc_object: {
-            Value value(Type::Object);
             int64_t size = readSize(inStream, type, subType);
+            Value value(Type::Object, size);
             for (int i=0; i<size; ++i) {
-                Value k = read(inStream);
-                Value v = read(inStream);
+                Value k = readValue(inStream);
+                Value v = readValue(inStream);
                 value.set(k, v);
             }
             return value;

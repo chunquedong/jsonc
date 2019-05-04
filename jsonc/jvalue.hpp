@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <cstring>
 
@@ -40,9 +41,9 @@ namespace jc {
         } value;
         Type _type;
     private:
-        void init();
+        void init(size_t reserveSize = 10);
     public:
-        Value(Type t = Type::Null);
+        Value(Type t = Type::Null, size_t reserveSize = 10);
         void free();
         
         //Value(const Value &other);
@@ -72,6 +73,8 @@ namespace jc {
         bool getProp(int i, Value &key, Value &val);
         
         void toJson(std::string &json, int level = 0);
+        
+        Value clone();
     };
     
     class JCArray {
@@ -79,13 +82,17 @@ namespace jc {
         std::vector<Value> array;
     public:
         ~JCArray();
+        
+        void reserve(size_t size) { array.reserve(size); }
     };
     
     class JCMap {
         std::vector<Value> properties;
-        std::map<std::string, size_t> map;
+        std::unordered_map<std::string, size_t> map;
     public:
         ~JCMap();
+        
+        void reserve(size_t size);
         
         size_t size() { return properties.size()/2; }
         Value key(size_t i) { return properties[i*2]; }
