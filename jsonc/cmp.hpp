@@ -49,7 +49,7 @@ enum jc_typeExt {
 class JCWriter {
     std::map<const std::string, size_t> stringTable;
 public:
-    bool packJson(std::string &input, std::ostream &outStream);
+    bool packJson(std::string &jsonstr, std::ostream &outStream);
     
     void write(Value &v, std::ostream &outStream);
 private:

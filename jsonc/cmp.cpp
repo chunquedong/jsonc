@@ -10,9 +10,9 @@
 
 using namespace jc;
 
-bool JCWriter::packJson(std::string &input, std::ostream &out) {
+bool JCWriter::packJson(std::string &jsonstr, std::ostream &out) {
     JsonParser parser;
-    Value v = parser.parse(input);
+    Value v = parser.parse(jsonstr);
     write(v, out);
     v.free();
     return true;
@@ -167,7 +167,7 @@ static bool tryWriteAsCoords(std::string &str, std::ostream &out) {
 void JCWriter::makeStrPool(Value &v) {
     switch (v.type()) {
         case Type::String: {
-            std::string &str = *v.asStr();
+            const std::string &str = *v.asStr();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 size_t i = stringTable.size();
@@ -217,7 +217,7 @@ void JCWriter::write(Value &v, std::ostream &out) {
 void JCWriter::writeValue(Value &v, std::ostream &out) {
     switch (v.type()) {
         case Type::String: {
-            std::string &str = *v.asStr();
+            const std::string &str = *v.asStr();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 printf("ERROR: miss str pool: %s\n", str.c_str());

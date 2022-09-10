@@ -7,6 +7,7 @@
 
 #include "jValue.hpp"
 #include <stdlib.h>
+#include <stdexcept>
 
 /////////////////////////////////////////////////////
 
@@ -24,7 +25,7 @@ JCArray::~JCArray() {
     }
 }
 
-Value JCMap::get(std::string &name) {
+Value JCMap::get(const std::string &name) {
     auto it = map.find(name);
     if (it == map.end()) {
         return Value();
@@ -33,7 +34,7 @@ Value JCMap::get(std::string &name) {
     return properties[i*2+1];
 }
 
-bool JCMap::has(std::string &name) {
+bool JCMap::has(const std::string &name) {
     return map.find(name) != map.end();
 }
 
@@ -166,7 +167,7 @@ size_t Value::size() {
     return 0;
 }
 
-bool Value::has(std::string &name) {
+bool Value::has(const std::string &name) {
     if (type() == Type::Object) {
         return value.map->has(name);
     }
@@ -182,7 +183,7 @@ Value Value::operator[](size_t i) {
     return Value();
 }
 
-Value Value::operator[](std::string &name) {
+Value Value::operator[](const std::string &name) {
     if (type() == Type::Object) {
         return value.map->get(name);
     }

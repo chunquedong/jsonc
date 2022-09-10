@@ -63,10 +63,10 @@ namespace jc {
         bool asBool();
         
         size_t size();
-        bool has(std::string &name);
+        bool has(const std::string &name);
         
         Value operator[](size_t i);
-        Value operator[](std::string &name);
+        Value operator[](const std::string &name);
         
         bool set(Value key, Value val);
         bool add(Value val);
@@ -97,9 +97,9 @@ namespace jc {
         size_t size() { return properties.size()/2; }
         Value key(size_t i) { return properties[i*2]; }
         Value val(size_t i) { return properties[i*2+1]; }
-        Value get(std::string &name);
+        Value get(const std::string &name);
         void set(Value key, Value val);
-        bool has(std::string &name);
+        bool has(const std::string &name);
     };
     
 }//ns

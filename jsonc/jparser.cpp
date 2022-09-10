@@ -7,6 +7,7 @@
 
 #include "jparser.hpp"
 #include <stdlib.h>
+#include <stdexcept>
 
 using namespace jc;
 
@@ -17,7 +18,7 @@ static bool isDigit(char c) {
     return false;
 }
 
-std::exception JsonParser::err(std::string msg) {
+std::exception JsonParser::err(const std::string &msg) {
     int s = pos - 10;
     if (s < 0) s = 0;
     int e = pos + 10;

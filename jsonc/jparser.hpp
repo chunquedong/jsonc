@@ -51,7 +51,7 @@ namespace jc {
         Value parseArray();
         std::string escape();
     private:
-        std::exception err(std::string msg);
+        std::exception err(const std::string &msg);
     
         void consume(int i = 1) {
             pos += i;

@@ -1,0 +1,7 @@
+name = jsonc
+summary = Compress JSON to binary format
+outType = lib
+version = 1.1
+srcDirs = jsonc/
+incDir = jsonc/
+excludeSrc = .*main.*
