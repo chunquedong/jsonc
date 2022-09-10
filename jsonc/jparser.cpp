@@ -49,8 +49,9 @@ Value JsonParser::parseObj() {
 void JsonParser::parsePair(Value obj) {
     skipWhitespace();
     Value value(Type::String);
-    std::string *str = value.asStr();
-    parseStr(*str);
+    std::string str;
+    parseStr(str);
+    value = str;
     
     skipWhitespace();
     
@@ -65,10 +66,11 @@ void JsonParser::parsePair(Value obj) {
 
 Value JsonParser::parseVal() {
     if (cur == (char)JsonToken::quote) {
-        Value Value(Type::String);
-        std::string *str = Value.asStr();
-        parseStr(*str);
-        return Value;
+        Value value(Type::String);
+        std::string str;
+        parseStr(str);
+        value = str;
+        return value;
     }
     else if (isDigit(cur)) return parseNum();
     else if (cur == (char)JsonToken::objectStart) return parseObj();

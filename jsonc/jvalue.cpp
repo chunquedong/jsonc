@@ -42,7 +42,7 @@ void JCMap::set(Value key, Value val) {
     size_t i = properties.size()/2;
     properties.push_back(key);
     properties.push_back(val);
-    map[*key.asStr()] = i;
+    map[key.asStr()] = i;
 }
 
 void JCMap::reserve(size_t size) {
@@ -53,7 +53,7 @@ void JCMap::reserve(size_t size) {
 void Value::init(size_t reserveSize) {
     switch (_type) {
         case Type::String:
-            value.str = new std::string();
+            value.str = NULL;
             break;
         case Type::Array:
             value.array = new JCArray();
@@ -76,7 +76,7 @@ Value::Value(Type t, size_t reserveSize) : _type(t) {
 void Value::free() {
     switch (_type) {
         case Type::String:
-            delete value.str;
+            ::free(value.str);
             break;
         case Type::Array:
             delete value.array;
@@ -110,6 +110,18 @@ Value &Value::operator=(const bool other) {
     return *this;
 }
 
+Value &Value::operator=(const std::string& other) {
+    setType(Type::String);
+    value.str = strdup(other.c_str());
+    return *this;
+}
+
+void Value::setStr(char *str, bool copy) {
+    setType(Type::String);
+    if (copy) value.str = strdup(str);
+    else value.str = str;
+}
+
 void Value::setType(Type t) {
     if (t == _type) return;
     if (_type != Type::Null) {
@@ -119,7 +131,7 @@ void Value::setType(Type t) {
     init();
 }
 
-std::string *Value::asStr(std::string *defVal) {
+const char *Value::asStr(const char *defVal) {
     if (_type != Type::String) return defVal;
     return value.str;
 }
@@ -228,7 +240,7 @@ Value Value::clone() {
     
     switch (_type) {
         case Type::String:
-            n.value.str = new std::string(*value.str);
+            n.value.str = strdup(value.str);
             break;
         case Type::Array:
             n.value.array = new JCArray(*value.array);
@@ -250,9 +262,9 @@ static void makesp(std::string &s, int d) {
     while (d--) s += "  ";
 }
 
-static void strEscape(std::string &json, std::string &raw) {
-    const char *c = raw.c_str();
-    for (size_t i=0,n=raw.size(); i<n; ++i) {
+static void strEscape(std::string &json, const char *raw) {
+    const char *c = raw;
+    for (size_t i=0; c[i] != NULL; ++i) {
         switch (*c) {
             case '\b': json+=('\\'); json+=('b'); break;
             case '\f': json+=('\\'); json+=('f'); break;
@@ -272,7 +284,7 @@ void Value::toJson(std::string &json, int level) {
     switch (ttype) {
         case Type::String:
             json += ("\"");
-            strEscape(json, *asStr());
+            strEscape(json, asStr());
             json += ("\"");
             break;
             
@@ -309,7 +321,7 @@ void Value::toJson(std::string &json, int level) {
                 Value p = value.map->key(i);
                 Value v = value.map->val(i);
                 makesp(json, level+1);
-                json += "\"" + *p.asStr() + "\": ";
+                json += std::string("\"") + p.asStr() + "\": ";
                 v.toJson(json, level+1);
                 json += (i==n-1?"":",");
                 json += ("\n");

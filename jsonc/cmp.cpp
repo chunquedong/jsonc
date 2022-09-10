@@ -167,7 +167,7 @@ static bool tryWriteAsCoords(std::string &str, std::ostream &out) {
 void JCWriter::makeStrPool(Value &v) {
     switch (v.type()) {
         case Type::String: {
-            const std::string &str = *v.asStr();
+            auto str = v.asStr();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 size_t i = stringTable.size();
@@ -217,10 +217,10 @@ void JCWriter::write(Value &v, std::ostream &out) {
 void JCWriter::writeValue(Value &v, std::ostream &out) {
     switch (v.type()) {
         case Type::String: {
-            const std::string &str = *v.asStr();
+            auto str = v.asStr();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
-                printf("ERROR: miss str pool: %s\n", str.c_str());
+                printf("ERROR: miss str pool: %s\n", str);
                 break;
             }
 
@@ -418,9 +418,10 @@ Value JCReader::readValue(std::istream &inStream) {
         case jc_string: {
             Value value(Type::String);
             int64_t size = readSize(inStream, type, subType);
-            std::string *s = value.asStr();
-            s->resize(size);
-            inStream.read((char*)s->data(), size);
+            char *str = (char*)malloc(size);
+            //s->resize(size);
+            inStream.read(str, size);
+            value.setStr(str, false);
             //stringTable.push_back(*s);
             //printf("%s\n", s.c_str());
             return value;

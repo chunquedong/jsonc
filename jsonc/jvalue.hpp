@@ -35,7 +35,7 @@ namespace jc {
             int64_t i;
             double d;
             bool b;
-            std::string *str;
+            char *str;
             JCArray *array;
             JCMap *map;
         } value;
@@ -53,11 +53,12 @@ namespace jc {
         Value &operator=(const std::string& other);
         Value &operator=(const double other);
         Value &operator=(const bool other);
+        void setStr(char *str, bool copy);
         
         Type type() { return _type; }
         void setType(Type t);
         
-        std::string *asStr(std::string *defVal = nullptr);
+        const char *asStr(const char *defVal = "");
         int64_t asInt();
         double asDouble();
         bool asBool();
