@@ -5,7 +5,7 @@
 //
 
 
-#include "cmp.hpp"
+#include "jcompress.hpp"
 #include "jparser.hpp"
 
 using namespace jc;

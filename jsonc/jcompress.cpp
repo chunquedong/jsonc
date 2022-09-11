@@ -5,7 +5,7 @@
 //
 
 
-#include "cmp.hpp"
+#include "jcompress.hpp"
 #include <stdlib.h>
 
 using namespace jc;
