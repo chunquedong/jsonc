@@ -31,7 +31,7 @@ namespace jc {
         int pos;
         
     public:
-        JsonParser() : input(str) {}
+        JsonParser() : input(str), cur(-1), pos(-1) {}
         
         Value parse(std::string &str) {
             input = str;

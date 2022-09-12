@@ -15,7 +15,7 @@ using namespace jc;
 
 JCMap::~JCMap() {
     for (int i=0; i<properties.size(); ++i) {
-        properties[i].free();
+        properties[i].second.free();
     }
 }
 
@@ -25,29 +25,59 @@ JCArray::~JCArray() {
     }
 }
 
+std::unordered_map<std::string, size_t>& JCMap::getMap() {
+    if (map == NULL) {
+        map = new std::unordered_map<std::string, size_t>();
+        map->reserve(properties.size());
+
+        for (int i = 0; i < properties.size(); ++i) {
+            (*map)[properties[i].first] = i;
+        }
+    }
+    return *map;
+}
+
+const std::string &JCMap::key(size_t i) {
+    return properties.at(i).first;
+}
+
+Value JCMap::val(size_t i) {
+    return properties.at(i).second;
+}
+
 Value JCMap::get(const std::string &name) {
+    auto map = getMap();
     auto it = map.find(name);
     if (it == map.end()) {
         return Value();
     }
     size_t i = it->second;
-    return properties[i*2+1];
+    return properties[i].second;
 }
 
 bool JCMap::has(const std::string &name) {
+    auto map = getMap();
     return map.find(name) != map.end();
 }
 
-void JCMap::set(Value key, Value val) {
-    size_t i = properties.size()/2;
-    properties.push_back(key);
-    properties.push_back(val);
-    map[key.asStr()] = i;
+void JCMap::_add(const std::string& key, Value val) {
+    size_t i = properties.size();
+    properties.push_back(std::pair<std::string, Value>(key, val));
+}
+
+void JCMap::set(const std::string &key, Value val) {
+    auto map = getMap();
+    if (map.find(key) != map.end()) {
+        properties[map[key]].second = val;
+        return;
+    }
+    size_t i = properties.size();
+    properties.push_back(std::pair<std::string, Value>(key, val));
+    map[key] = i;
 }
 
 void JCMap::reserve(size_t size) {
     properties.reserve(size);
-    map.reserve(size);
 }
 
 void Value::init(size_t reserveSize) {
@@ -64,7 +94,7 @@ void Value::init(size_t reserveSize) {
             value.map->reserve(reserveSize);
             break;
         default:
-            memset(&value, 0, sizeof value);
+            value.i = 0;
             break;
     };
 }
@@ -202,7 +232,7 @@ Value Value::operator[](const std::string &name) {
     return Value();
 }
 
-bool Value::set(Value key, Value val) {
+bool Value::set(const std::string& key, Value val) {
     if (type() == Type::Null) {
         setType(Type::Object);
     }
@@ -224,7 +254,7 @@ bool Value::add(Value val) {
     return true;
 }
 
-bool Value::getProp(int i, Value &key, Value &val) {
+bool Value::getProp(int i, std::string& key, Value &val) {
     if (type() == Type::Object) {
         if (i < value.map->size()) {
             key = value.map->key(i);
@@ -234,6 +264,7 @@ bool Value::getProp(int i, Value &key, Value &val) {
     }
     return false;
 }
+
 
 Value Value::clone() {
     Value n = *this;
@@ -264,7 +295,8 @@ static void makesp(std::string &s, int d) {
 
 static void strEscape(std::string &json, const char *raw) {
     const char *c = raw;
-    for (size_t i=0; c[i] != NULL; ++i) {
+    if (!c) return;
+    while (*c) {
         switch (*c) {
             case '\b': json+=('\\'); json+=('b'); break;
             case '\f': json+=('\\'); json+=('f'); break;
@@ -318,10 +350,10 @@ void Value::toJson(std::string &json, int level) {
         case Type::Object: {
             json += ("{\n");
             for (int i=0,n=(int)size(); i<n; i++) {
-                Value p = value.map->key(i);
+                const std::string p = value.map->key(i);
                 Value v = value.map->val(i);
                 makesp(json, level+1);
-                json += std::string("\"") + p.asStr() + "\": ";
+                json += std::string("\"") + p + "\": ";
                 v.toJson(json, level+1);
                 json += (i==n-1?"":",");
                 json += ("\n");

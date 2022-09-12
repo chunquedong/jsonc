@@ -5,3 +5,4 @@ jsonc.xcodeproj/project.xcworkspace
 data.json
 jsonc.xcscheme
 build/
+data_out.jc

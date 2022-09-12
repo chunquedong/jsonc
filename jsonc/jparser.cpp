@@ -48,10 +48,10 @@ Value JsonParser::parseObj() {
 
 void JsonParser::parsePair(Value obj) {
     skipWhitespace();
-    Value value(Type::String);
+    //Value value(Type::String);
     std::string str;
     parseStr(str);
-    value = str;
+    //value = str;
     
     skipWhitespace();
     
@@ -61,7 +61,7 @@ void JsonParser::parsePair(Value obj) {
     Value val = parseVal();
     skipWhitespace();
     
-    obj.set(value, val);
+    obj.value.map->_add(str, val);
 }
 
 Value JsonParser::parseVal() {

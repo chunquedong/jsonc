@@ -48,6 +48,7 @@ enum jc_typeExt {
 
 class JCWriter {
     std::map<const std::string, size_t> stringTable;
+    std::vector<std::string> stringPool;
 public:
     bool packJson(std::string &jsonstr, std::ostream &outStream);
     

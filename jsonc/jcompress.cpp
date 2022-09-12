@@ -11,6 +11,7 @@
 using namespace jc;
 
 bool JCWriter::packJson(std::string &jsonstr, std::ostream &out) {
+
     JsonParser parser;
     Value v = parser.parse(jsonstr);
     write(v, out);
@@ -172,15 +173,18 @@ void JCWriter::makeStrPool(Value &v) {
             if (it == stringTable.end()) {
                 size_t i = stringTable.size();
                 stringTable[str] = i;
+                stringPool.push_back(str);
             }
             break;
         }
         case Type::Object: {
             for (int i=0; i<v.size(); ++i) {
-                Value name;
+                std::string name;
                 Value val;
                 v.getProp(i, name, val);
-                makeStrPool(name);
+                Value key;
+                key = name;
+                makeStrPool(key);
                 
                 //set value
                 makeStrPool(val);
@@ -201,11 +205,11 @@ void JCWriter::makeStrPool(Value &v) {
 
 void JCWriter::write(Value &v, std::ostream &out) {
     makeStrPool(v);
-    int32_t n = (int32_t)stringTable.size();
+    int32_t n = (int32_t)stringPool.size();
     out.write((char*)(&n), 4);
     
-    for (auto itr = stringTable.begin(); itr != stringTable.end(); ++itr) {
-        const std::string &str = itr->first;
+    for (int i = 0; i < n; ++i) {
+        const std::string &str = stringPool[i];
         uint8_t type = jc_string;
         writeSize(out, type, str.size());
         out.write(str.data(), str.size());
@@ -239,10 +243,12 @@ void JCWriter::writeValue(Value &v, std::ostream &out) {
         case Type::Object: {
             writeSize(out, jc_object, v.size());
             for (int i=0; i<v.size(); ++i) {
-                Value name;
+                std::string name;
                 Value val;
                 v.getProp(i, name, val);
-                writeValue(name, out);
+                Value key;
+                key = name;
+                writeValue(key, out);
                 
                 //set value
                 writeValue(val, out);
@@ -306,8 +312,8 @@ static int64_t readSize(std::istream &inStream, jc_type &type, uint8_t subType) 
             return -1;
             break;
         case 12: {
-            int8_t i = 0;
-            inStream.read((char*)(&i), 1);
+            int8_t i = inStream.get();
+            //inStream.read((char*)(&i), 1);
             return i;
             break;
         }
@@ -336,27 +342,31 @@ static int64_t readSize(std::istream &inStream, jc_type &type, uint8_t subType) 
 }
 
 Value JCReader::read(std::istream &inStream) {
+
     if (inStream.eof() || inStream.fail()) {
         return Value();
     }
-    
+
     int32_t poolSize = 0;
     inStream.read((char*)(&poolSize), 4);
+
     pool.resize(poolSize);
     for (int32_t i=0; i<poolSize; ++i) {
         pool[i] = readValue(inStream);
     }
-    
+
     return readValue(inStream);
 }
 
 Value JCReader::readValue(std::istream &inStream) {
-    if (inStream.eof()) {
+    /*if (inStream.eof()) {
         return Value();
-    }
+    }*/
     
-    uint8_t t = 0;
-    inStream.read((char*)(&t), 1);
+    int c = inStream.get();
+    if (c == EOF) return Value();
+    uint8_t t = c;
+    //inStream.read((char*)(&t), 1);
     jc_type type = (jc_type)((t >> 4) & 0xff);
     uint8_t subType =  t & 0x0f;
     
@@ -418,9 +428,10 @@ Value JCReader::readValue(std::istream &inStream) {
         case jc_string: {
             Value value(Type::String);
             int64_t size = readSize(inStream, type, subType);
-            char *str = (char*)malloc(size);
+            char *str = (char*)malloc(size+1);
             //s->resize(size);
             inStream.read(str, size);
+            str[size] = 0;
             value.setStr(str, false);
             //stringTable.push_back(*s);
             //printf("%s\n", s.c_str());
@@ -441,7 +452,7 @@ Value JCReader::readValue(std::istream &inStream) {
             for (int i=0; i<size; ++i) {
                 Value k = readValue(inStream);
                 Value v = readValue(inStream);
-                value.set(k, v);
+                value.value.map->_add(k.asStr(), v);
             }
             return value;
             break;

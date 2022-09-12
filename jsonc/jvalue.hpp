@@ -31,6 +31,9 @@ namespace jc {
     class JCArray;
     
     class Value {
+        friend class JsonParser;
+        friend class JCReader;
+
         union {
             int64_t i;
             double d;
@@ -43,7 +46,8 @@ namespace jc {
     private:
         void init(size_t reserveSize = 10);
     public:
-        Value(Type t = Type::Null, size_t reserveSize = 10);
+        Value() : _type(Type::Null) { value.i = 0; }
+        Value(Type t, size_t reserveSize = 10);
         void free();
         
         //Value(const Value &other);
@@ -62,6 +66,7 @@ namespace jc {
         int64_t asInt();
         double asDouble();
         bool asBool();
+        bool isNull() { return _type == Type::Null; }
         
         size_t size();
         bool has(const std::string &name);
@@ -69,9 +74,9 @@ namespace jc {
         Value operator[](size_t i);
         Value operator[](const std::string &name);
         
-        bool set(Value key, Value val);
+        bool set(const std::string& key, Value val);
         bool add(Value val);
-        bool getProp(int i, Value &key, Value &val);
+        bool getProp(int i, std::string& key, Value &val);
         
         void toJson(std::string &json, int level = 0);
         
@@ -88,19 +93,22 @@ namespace jc {
     };
     
     class JCMap {
-        std::vector<Value> properties;
-        std::unordered_map<std::string, size_t> map;
+        std::vector<std::pair<std::string,Value> > properties;
+        std::unordered_map<std::string, size_t> *map = NULL;
     public:
         ~JCMap();
         
         void reserve(size_t size);
         
-        size_t size() { return properties.size()/2; }
-        Value key(size_t i) { return properties[i*2]; }
-        Value val(size_t i) { return properties[i*2+1]; }
+        size_t size() { return properties.size(); }
+        const std::string &key(size_t i);
+        Value val(size_t i);
         Value get(const std::string &name);
-        void set(Value key, Value val);
+        void set(const std::string &key, Value val);
+        void _add(const std::string& key, Value val);
         bool has(const std::string &name);
+    private:
+        std::unordered_map<std::string, size_t> &getMap();
     };
     
 }//ns
