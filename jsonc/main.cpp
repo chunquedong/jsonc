@@ -75,7 +75,6 @@ void readTest() {
     clock_t t1 = clock();
     printf("decompress: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
 
-
     //JCReader r(buffer, length);
     //Value value0 = r.read();
     //std::string str;
@@ -139,18 +138,23 @@ void readTest2() {
 // Tools
 /////////////////////////////////////////////////////////////////
 
-void convert(const char *from, const char *to) {
-    std::ifstream in(from);
+void convert(const char *from, const char *to, int version) {
+    std::ifstream in(from, std::ifstream::binary | std::ifstream::in);
     std::string str = "";
     std::string tmp;
     while (getline(in, tmp)) str += tmp;
     
     std::ofstream out(to);
-    packJson(str, out);
+    if (version == 2) {
+        packJson2(str, out);
+    }
+    else {
+        packJson(str, out);
+    }
 }
 
-void dump(const char *from) {
-    std::ifstream inStream(from);
+void dump(const char *from, int version) {
+    std::ifstream inStream(from, std::ifstream::binary | std::ifstream::in);
     inStream.seekg(0, std::ios::end);
     long length = inStream.tellg();
     inStream.seekg(0, std::ios::beg);
@@ -158,17 +162,20 @@ void dump(const char *from) {
     char* buffer = (char*)malloc(length);
     inStream.read(buffer, length);
 
-    JCReader r(buffer, length);
-    Value value = r.read();
-    std::string str;
-    value.toJson(str);
-    printf("%s\n", str.c_str());
-    value.free();
-
-    /*Value *json = JEncoder::decode(buffer, length);
-    std::string str;
-    json->toJson(str);
-    printf("%s\n", str.c_str());*/
+    if (version == 2) {
+        Value* json = JEncoder::decode(buffer, length);
+        std::string str;
+        json->toJson(str);
+        printf("%s\n", str.c_str());
+    }
+    else {
+        JCReader r(buffer, length);
+        Value value = r.read();
+        std::string str;
+        value.toJson(str);
+        printf("%s\n", str.c_str());
+        value.free();
+    }
 
     free(buffer);
 }
@@ -187,30 +194,38 @@ int main(int argc, const char * argv[]) {
     }
     else if (argc >= 3) {
         bool dmp = false;
+        int version = 1;
         int i = 1;
         while (i<argc) {
             if (*argv[i] == '-') {
                 if (!strcmp(argv[i], "-d")) {
                     dmp = true;
                 }
+                else if (!strcmp(argv[i], "-v2")) {
+                    version = 2;
+                }
                 ++i;
             } else {
                 break;
             }
         }
+
+
         if (dmp == false && i+1 < argc) {
             const char *from = argv[i];
             const char *to = argv[i+1];
-            convert(from, to);
+            convert(from, to, version);
             return 0;
         }
         else if (dmp && i < argc) {
             const char *from = argv[i];
-            dump(from);
+            dump(from, version);
             return 0;
         }
     }
     
-    printf("Arg Error\n");
+    printf("Usage:\n");
+    printf("  jsonc [-v2] <input json file> <output file>\n");
+    printf("  jsonc [-v2] -d <input binary file>\n");
     return 1;
 }
