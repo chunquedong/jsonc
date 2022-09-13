@@ -101,6 +101,7 @@ void JCMap::set(const std::string& key, Value val) {
 
 void JCMap::reserve(size_t size) {
     properties.reserve(size);
+    map.reserve(size);
 }
 
 /////////////////////////////////////////////////////////////////

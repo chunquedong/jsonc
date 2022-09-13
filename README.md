@@ -1,22 +1,30 @@
 # jsonc
 Compress JSON to binary format.
 
-50% smaller and 50% faster.
+20% smaller and 50% faster.
 
-# Format
+## Compare with JSON Text
+
+|  Format   |  Size     | Parse/Decode Time |
+|-----------|-----------|-------------------|
+| version 1 |   20%     |     50%           |
+| version 2 |   90%     |     0             |
+
+
+## Format (version 1)
 
 | Type   |  ExtType |  Length(optional) |  Data(optional)    |
 |--------|----------|-------------------|--------------------|
 | 4bit   | 4bit     | 1/2/4/8byte       | length byte        | 
 
-### Primi
+#### Primi
 |  Name   | Type   |  ExtType |
 |---------|--------|----------|
 | null    | primi  | 0        |
 | true    | primi  | 1        |
 | false   | primi  | 2        |
 
-### Number
+#### Number
 |  Name       | Type   |  ExtType |  Length   |
 |-------------|--------|----------|-----------|
 | tiny int    | 1      | 0~10,11  |           |
@@ -28,18 +36,18 @@ Compress JSON to binary format.
 | float32     | 2      | 14       |  4byte    |
 | float64     | 2      | 15       |  8byte    |
 
-## Array/Object
+#### Array/Object
 |  Name   | Type   |  ExtType        |  Length    |  Data         |
 |---------|--------|-----------------|------------|---------------|
 | array   | 3      | 0~10,12,13,14,15| 1/2/4/8byte| val1,val2,... |
 | object  | 4      | 0~10,12,13,14,15| 1/2/4/8byte| key1,val1,key2,val2,... |
 
-## String
+#### String
 |  Name            | Type   |  ExtType        |  Length         |  Data      |
 |------------------|--------|-----------------|-----------------|------------|
 | new string       | 5      | 0~10,12,13,14,15| 1/2/4/8byte     | data       |
 
-## Ref to Pool
+#### Ref to Pool
 |  Name            | Type   |  ExtType        |  Index          |
 |------------------|--------|-----------------|-----------------|
 | ref              | 6      | 0~10,12,13,14,15| 1/2/4/8byte     |
