@@ -17,21 +17,29 @@
 namespace jc {
     
     enum class Type {
+        Null,
         String,
         Array,
         Object,
         Integer,
         Double,
         Boolean,
-        Null,
-        //Unknow,
+        ImuString,
+        ImuArray,
+        ImuObject,
     };
     
     class JCMap;
     class JCArray;
+
+    struct ImuInfo {
+        uint32_t bufferOffset;
+        uint32_t sizeOrPos;
+    };
     
     class Value {
         friend class JsonParser;
+        friend class JEncoder;
         friend class JCReader;
 
         union {
@@ -41,17 +49,17 @@ namespace jc {
             char *str;
             JCArray *array;
             JCMap *map;
+            ImuInfo imuInfo;
         } value;
+        
         Type _type;
+
     private:
         void init(size_t reserveSize = 10);
     public:
         Value() : _type(Type::Null) { value.i = 0; }
         Value(Type t, size_t reserveSize = 10);
         void free();
-        
-        //Value(const Value &other);
-        //Value &operator=(const Value& other);
         
         Value &operator=(const int64_t other);
         Value &operator=(const std::string& other);
@@ -71,12 +79,12 @@ namespace jc {
         size_t size();
         bool has(const std::string &name);
         
-        Value operator[](size_t i);
-        Value operator[](const std::string &name);
+        Value *operator[](size_t i);
+        Value *operator[](const std::string &name);
         
         bool set(const std::string& key, Value val);
         bool add(Value val);
-        bool getProp(int i, std::string& key, Value &val);
+        Value *getProp(int i, std::string& key);
         
         void toJson(std::string &json, int level = 0);
         
@@ -102,8 +110,8 @@ namespace jc {
         
         size_t size() { return properties.size(); }
         const std::string &key(size_t i);
-        Value val(size_t i);
-        Value get(const std::string &name);
+        Value &val(size_t i);
+        Value &get(const std::string &name);
         void set(const std::string &key, Value val);
         void _add(const std::string& key, Value val);
         bool has(const std::string &name);

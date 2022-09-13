@@ -13,15 +13,15 @@
 
 using namespace jc;
 
-JCMap::~JCMap() {
-    for (int i=0; i<properties.size(); ++i) {
-        properties[i].second.free();
-    }
-}
-
 JCArray::~JCArray() {
     for (Value &Value : array) {
         Value.free();
+    }
+}
+
+JCMap::~JCMap() {
+    for (int i=0; i<properties.size(); ++i) {
+        properties[i].second.free();
     }
 }
 
@@ -41,11 +41,11 @@ const std::string &JCMap::key(size_t i) {
     return properties.at(i).first;
 }
 
-Value JCMap::val(size_t i) {
+Value &JCMap::val(size_t i) {
     return properties.at(i).second;
 }
 
-Value JCMap::get(const std::string &name) {
+Value &JCMap::get(const std::string &name) {
     auto map = getMap();
     auto it = map.find(name);
     if (it == map.end()) {
@@ -79,6 +79,10 @@ void JCMap::set(const std::string &key, Value val) {
 void JCMap::reserve(size_t size) {
     properties.reserve(size);
 }
+
+/////////////////////////////////////////////////////////////////
+// JSON Value
+/////////////////////////////////////////////////////////////////
 
 void Value::init(size_t reserveSize) {
     switch (_type) {
@@ -114,13 +118,16 @@ void Value::free() {
         case Type::Object:
             delete value.map;
             break;
+        case Type::ImuArray:
+        case Type::ImuObject:
+        case Type::ImuString:
+            
+            return;
         default:
             break;
     };
-    memset(&value, 0, sizeof value);
+    value.i = 0;
 }
-
-/////////////////////////////////////////////////////
 
 Value &Value::operator=(const int64_t other) {
     setType(Type::Integer);
@@ -162,6 +169,10 @@ void Value::setType(Type t) {
 }
 
 const char *Value::asStr(const char *defVal) {
+    if (_type == Type::ImuString) {
+        char *buffer = ((char*)this) - value.imuInfo.bufferOffset;
+        return (buffer + value.imuInfo.sizeOrPos);
+    }
     if (_type != Type::String) return defVal;
     return value.str;
 }
@@ -206,30 +217,76 @@ size_t Value::size() {
     else if (type() == Type::Object) {
         return value.map->size();
     }
+    switch (_type) {
+    case Type::Array:
+        return value.array->array.size();
+        break;
+    case Type::Object:
+        return value.map->size();
+        break;
+    case Type::ImuArray:
+    case Type::ImuObject:
+        return value.imuInfo.sizeOrPos;
+    default:
+        return 0;
+        break;
+    }
     return 0;
 }
 
 bool Value::has(const std::string &name) {
-    if (type() == Type::Object) {
+    if (_type == Type::ImuObject) {
+        for (int i = 0; i < value.imuInfo.sizeOrPos; ++i) {
+            uint32_t *index = (uint32_t*)(this + 1);
+            char *buffer = ((char*)this) - value.imuInfo.bufferOffset;
+            const char *key = buffer + index[i * 2];
+            if (strcmp(key, name.c_str()) == 0) {
+                return true;
+            }
+        }
+    }
+
+    if (_type == Type::Object) {
         return value.map->has(name);
     }
+
     return false;
 }
 
-Value Value::operator[](size_t i) {
-    if (type() == Type::Array) {
-        if (i < value.array->array.size()) {
-            return (value.array->array)[i];
+Value *Value::operator[](size_t i) {
+    if (_type == Type::ImuArray) {
+        if (i < value.imuInfo.sizeOrPos) {
+            char *buffer = ((char*)this) - value.imuInfo.bufferOffset;
+            uint32_t *index = (uint32_t*)(this + 1);
+            const char *pos = buffer + index[i];
+            return ((Value*)pos);
         }
     }
-    return Value();
+
+    if (_type == Type::Array) {
+        if (i < value.array->array.size()) {
+            return &(value.array->array)[i];
+        }
+    }
+    return NULL;
 }
 
-Value Value::operator[](const std::string &name) {
-    if (type() == Type::Object) {
-        return value.map->get(name);
+Value *Value::operator[](const std::string &name) {
+    if (_type == Type::ImuObject) {
+        for (int i = 0; i < value.imuInfo.sizeOrPos; ++i) {
+            char *buffer = ((char*)this) - value.imuInfo.bufferOffset;
+            uint32_t *index = (uint32_t*)(this + 1);
+            const char *key = buffer + index[i * 2];
+            if (strcmp(key, name.c_str()) == 0) {
+                const char *pos = buffer + index[i*2+1];
+                return ((Value*)pos);
+            }
+        }
     }
-    return Value();
+    if (type() == Type::Object) {
+        return &value.map->get(name);
+    }
+    return NULL;
 }
 
 bool Value::set(const std::string& key, Value val) {
@@ -244,25 +301,34 @@ bool Value::set(const std::string& key, Value val) {
 }
 
 bool Value::add(Value val) {
-    if (type() == Type::Null) {
+    if (_type == Type::Null) {
         setType(Type::Array);
     }
-    else if (type() != Type::Array) {
+    else if (_type != Type::Array) {
         return false;
     }
     value.array->array.push_back(val);
     return true;
 }
 
-bool Value::getProp(int i, std::string& key, Value &val) {
-    if (type() == Type::Object) {
-        if (i < value.map->size()) {
-            key = value.map->key(i);
-            val = value.map->val(i);
-            return true;
+Value *Value::getProp(int i, std::string& key) {
+    if (_type == Type::ImuObject) {
+        if (i < value.imuInfo.sizeOrPos) {
+            char *buffer = ((char*)this) - value.imuInfo.bufferOffset;
+            uint32_t *index = (uint32_t*)(this + 1);
+            const char *akey = buffer + index[i * 2];
+            key = akey;
+            const char *pos = buffer + index[i * 2 + 1];
+            return ((Value*)pos);
         }
     }
-    return false;
+    if (_type == Type::Object) {
+        if (i < value.map->size()) {
+            key = value.map->key(i);
+            return &value.map->val(i);
+        }
+    }
+    return NULL;
 }
 
 
@@ -282,11 +348,12 @@ Value Value::clone() {
         default:
             break;
     };
-    
     return n;
 }
 
-/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+// Value to JSON string
+/////////////////////////////////////////////////////////////////
 
 static void makesp(std::string &s, int d) {
     if (d < 0) return;
@@ -315,6 +382,7 @@ void Value::toJson(std::string &json, int level) {
     Type ttype = type();
     switch (ttype) {
         case Type::String:
+        case Type::ImuString:
             json += ("\"");
             strEscape(json, asStr());
             json += ("\"");
@@ -338,23 +406,26 @@ void Value::toJson(std::string &json, int level) {
         case Type::Null:
             json += "null";
             break;
-        case Type::Array: {
+        case Type::Array:
+        case Type::ImuArray: {
             json += "[";
             for (int i=0,n=(int)size(); i<n; i++) {
                 if (i) json += ", ";
-                (*this)[i].toJson(json, level+1);
+                (*this)[i]->toJson(json, level+1);
             }
             json += "]";
             break;
         }
-        case Type::Object: {
+        case Type::Object:
+        case Type::ImuObject: {
             json += ("{\n");
             for (int i=0,n=(int)size(); i<n; i++) {
-                const std::string p = value.map->key(i);
-                Value v = value.map->val(i);
+                std::string p;
+                Value *v = getProp(i, p);
+
                 makesp(json, level+1);
                 json += std::string("\"") + p + "\": ";
-                v.toJson(json, level+1);
+                v->toJson(json, level+1);
                 json += (i==n-1?"":",");
                 json += ("\n");
             }

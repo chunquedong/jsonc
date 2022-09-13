@@ -180,21 +180,20 @@ void JCWriter::makeStrPool(Value &v) {
         case Type::Object: {
             for (int i=0; i<v.size(); ++i) {
                 std::string name;
-                Value val;
-                v.getProp(i, name, val);
+                Value *val = v.getProp(i, name);
                 Value key;
                 key = name;
                 makeStrPool(key);
                 
                 //set value
-                makeStrPool(val);
+                makeStrPool(*val);
             }
             break;
         }
         case Type::Array: {
             for (int i=0; i<v.size(); ++i) {
-                Value sv = v[i];
-                makeStrPool(sv);
+                Value *sv = v[i];
+                makeStrPool(*sv);
             }
             break;
         }
@@ -244,22 +243,21 @@ void JCWriter::writeValue(Value &v, std::ostream &out) {
             writeSize(out, jc_object, v.size());
             for (int i=0; i<v.size(); ++i) {
                 std::string name;
-                Value val;
-                v.getProp(i, name, val);
+                Value *val = v.getProp(i, name);
                 Value key;
                 key = name;
                 writeValue(key, out);
                 
                 //set value
-                writeValue(val, out);
+                writeValue(*val, out);
             }
             break;
         }
         case Type::Array: {
             writeSize(out, jc_array, v.size());
             for (int i=0; i<v.size(); ++i) {
-                Value sv = v[i];
-                writeValue(sv, out);
+                Value *sv = v[i];
+                writeValue(*sv, out);
             }
             break;
         }
