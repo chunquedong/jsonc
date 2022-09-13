@@ -195,6 +195,10 @@ void JCWriter::makeStrPool(Value &v) {
 }
 
 void JCWriter::write(Value &v, std::ostream &out) {
+    out.write("JCXX", 4);
+    int32_t version = 1;
+    out.write((char*)(&version), 4);
+
     makeStrPool(v);
     int32_t n = (int32_t)stringPool.size();
     out.write((char*)(&n), 4);
@@ -344,6 +348,7 @@ static int64_t readSize(JCReader *inStream, jc_type &type, uint8_t subType) {
 }
 
 Value JCReader::read() {
+    pos = 8;
 
     if (pos >= size) {
         return Value();

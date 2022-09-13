@@ -153,7 +153,7 @@ void convert(const char *from, const char *to, int version) {
     }
 }
 
-void dump(const char *from, int version) {
+void dump(const char *from) {
     std::ifstream inStream(from, std::ifstream::binary | std::ifstream::in);
     inStream.seekg(0, std::ios::end);
     long length = inStream.tellg();
@@ -162,7 +162,9 @@ void dump(const char *from, int version) {
     char* buffer = (char*)malloc(length);
     inStream.read(buffer, length);
 
-    if (version == 2) {
+    int32_t *version = (int32_t*)(buffer + 4);
+
+    if (*version == 2) {
         Value* json = JEncoder::decode(buffer, length);
         std::string str;
         json->toJson(str);
@@ -219,13 +221,13 @@ int main(int argc, const char * argv[]) {
         }
         else if (dmp && i < argc) {
             const char *from = argv[i];
-            dump(from, version);
+            dump(from);
             return 0;
         }
     }
     
     printf("Usage:\n");
     printf("  jsonc [-v2] <input json file> <output file>\n");
-    printf("  jsonc [-v2] -d <input binary file>\n");
+    printf("  jsonc -d <input binary file>\n");
     return 1;
 }

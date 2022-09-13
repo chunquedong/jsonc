@@ -130,10 +130,13 @@ void JEncoder::writeValue(Value &v) {
 std::vector<char> &JEncoder::encode(Value &v) {
     makeStrPool(v);
 
+    writeData("JCXX", 4);
+    int32_t version = 2;
+    writeData((char*)(&version), 4);
+
+    int header = 8;
     int32_t start = 0;
     writeData((char*)(&start), 4);
-    int32_t version = 0;
-    writeData((char*)(&version), 4);
 
     int32_t n = (int32_t)stringPool.size();
     writeData((char*)(&n), 4);
@@ -148,7 +151,7 @@ std::vector<char> &JEncoder::encode(Value &v) {
     }
 
     int32_t jump = buffer.size();
-    writeData((char*)(&jump), 4, 0);
+    writeData((char*)(&jump), 4, header);
     
     writeValue(v);
 

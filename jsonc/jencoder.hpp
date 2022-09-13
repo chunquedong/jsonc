@@ -28,7 +28,7 @@ public:
     std::vector<char> &encode(Value &v);
 
     static Value *decode(char *buffer, int size) {
-        int32_t *jmp = (int32_t*)buffer;
+        int32_t *jmp = (int32_t*)(buffer+8);
         if (*jmp > size) return NULL;
         return (Value*)(buffer + *jmp);
     }
