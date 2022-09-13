@@ -10,14 +10,6 @@
 
 using namespace jc;
 
-bool JCWriter::packJson(std::string &jsonstr, std::ostream &out) {
-
-    JsonParser parser;
-    Value v = parser.parse(jsonstr);
-    write(v, out);
-    v.free();
-    return true;
-}
 
 static void writeSize(std::ostream &out, uint8_t type, int64_t val) {
     uint8_t subType = 0;
@@ -211,7 +203,7 @@ void JCWriter::write(Value &v, std::ostream &out) {
         const std::string &str = stringPool[i];
         uint8_t type = jc_string;
         writeSize(out, type, str.size());
-        out.write(str.data(), str.size());
+        out.write(str.c_str(), str.size()+1);
     }
     
     writeValue(v, out);
@@ -304,32 +296,44 @@ void JCWriter::writeValue(Value &v, std::ostream &out) {
     }
 }
 
-static int64_t readSize(std::istream &inStream, jc_type &type, uint8_t subType) {
+
+/////////////////////////////////////////////////////////////////
+// Reader
+/////////////////////////////////////////////////////////////////
+
+bool JCReader::readData(char* data, int len) {
+    if (pos + len > this->size) return false;
+    memcpy(data, buffer + pos, len);
+    pos += len;
+    return true;
+}
+
+static int64_t readSize(JCReader *inStream, jc_type &type, uint8_t subType) {
     switch (subType) {
         case 11:
             return -1;
             break;
         case 12: {
-            int8_t i = inStream.get();
+            int8_t i = inStream->readByte();
             //inStream.read((char*)(&i), 1);
             return i;
             break;
         }
         case 13:{
             int16_t i = 0;
-            inStream.read((char*)(&i), 2);
+            inStream->readData((char*)(&i), 2);
             return i;
             break;
         }
         case 14:{
             int32_t i = 0;
-            inStream.read((char*)(&i), 4);
+            inStream->readData((char*)(&i), 4);
             return i;
             break;
         }
         case 15:{
             int64_t i = 0;
-            inStream.read((char*)(&i), 8);
+            inStream->readData((char*)(&i), 8);
             return i;
             break;
         }
@@ -339,29 +343,29 @@ static int64_t readSize(std::istream &inStream, jc_type &type, uint8_t subType) 
     return subType;
 }
 
-Value JCReader::read(std::istream &inStream) {
+Value JCReader::read() {
 
-    if (inStream.eof() || inStream.fail()) {
+    if (pos >= size) {
         return Value();
     }
 
     int32_t poolSize = 0;
-    inStream.read((char*)(&poolSize), 4);
+    readData((char*)(&poolSize), 4);
 
     pool.resize(poolSize);
     for (int32_t i=0; i<poolSize; ++i) {
-        pool[i] = readValue(inStream);
+        pool[i] = readValue();
     }
 
-    return readValue(inStream);
+    return readValue();
 }
 
-Value JCReader::readValue(std::istream &inStream) {
+Value JCReader::readValue() {
     /*if (inStream.eof()) {
         return Value();
     }*/
     
-    int c = inStream.get();
+    int c = readByte();
     if (c == EOF) return Value();
     uint8_t t = c;
     //inStream.read((char*)(&t), 1);
@@ -371,7 +375,7 @@ Value JCReader::readValue(std::istream &inStream) {
     switch (type) {
         case jc_int: {
             Value Value(Type::Integer);
-            int64_t size = readSize(inStream, type, subType);
+            int64_t size = readSize(this, type, subType);
             Value = size;
             return Value;
             break;
@@ -382,11 +386,11 @@ Value JCReader::readValue(std::istream &inStream) {
                 Value = (double)subType;
             } else if (subType == jc_int64) {
                 double d;
-                inStream.read((char*)(&d), sizeof(double));
+                readData((char*)(&d), sizeof(double));
                 Value = d;
             } else if (subType == jc_int32) {
                 float d;
-                inStream.read((char*)(&d), sizeof(float));
+                readData((char*)(&d), sizeof(float));
                 Value = d;
             } else {
                 //error
@@ -414,43 +418,49 @@ Value JCReader::readValue(std::istream &inStream) {
             break;
         }
         case jc_array: {
-            int64_t size = readSize(inStream, type, subType);
+            int64_t size = readSize(this, type, subType);
             Value value(Type::Array, size);
             for (int i=0; i<size; ++i) {
-                Value v = readValue(inStream);
+                Value v = readValue();
                 value.add(v);
             }
             return value;
             break;
         }
         case jc_string: {
-            Value value(Type::String);
-            int64_t size = readSize(inStream, type, subType);
-            char *str = (char*)malloc(size+1);
-            //s->resize(size);
-            inStream.read(str, size);
+            Value value(Type::StringRef);
+            int64_t size = readSize(this, type, subType);
+
+            value.value.str = buffer + pos;
+            pos += size + 1;
+
+            /*char *str = (char*)malloc(size+1);
+            readData(str, size);
             str[size] = 0;
-            value.setStr(str, false);
+            value.setStr(str, false);*/
+
             //stringTable.push_back(*s);
             //printf("%s\n", s.c_str());
             return value;
             break;
         }
         case jc_ref: {
-            int64_t size = readSize(inStream, type, subType);
+            int64_t size = readSize(this, type, subType);
             if (size < pool.size()) {
-                return pool[size].clone();
+                Value v = pool[size];
+                v._type = Type::StringRef;
+                return v;
             }
             return Value(Type::Null);
             break;
         }
         case jc_object: {
-            int64_t size = readSize(inStream, type, subType);
+            int64_t size = readSize(this, type, subType);
             Value value(Type::Object, size);
             for (int i=0; i<size; ++i) {
-                Value k = readValue(inStream);
-                Value v = readValue(inStream);
-                value.value.map->_add(k.asStr(), v);
+                Value k = readValue();
+                Value v = readValue();
+                value._add(k.asStr(), v);
             }
             return value;
             break;

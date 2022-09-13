@@ -24,9 +24,7 @@ class JEncoder {
     std::map<const std::string, size_t> stringTable;
     std::vector<std::string> stringPool;
     std::vector<char> buffer;
-public:
-    bool packJson(std::string &jsonstr, std::ostream &outStream);
-    
+public:    
     std::vector<char> &encode(Value &v);
 
     static Value *decode(char *buffer, int size) {

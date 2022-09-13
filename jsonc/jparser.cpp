@@ -61,7 +61,7 @@ void JsonParser::parsePair(Value obj) {
     Value val = parseVal();
     skipWhitespace();
     
-    obj.value.map->_add(str, val);
+    obj._add(str, val);
 }
 
 Value JsonParser::parseVal() {

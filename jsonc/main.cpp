@@ -19,20 +19,85 @@ void testParse() {
     while (getline(in, tmp)) str += tmp;
     
     clock_t t0 = clock();
-    Value value0;
     for (int i=0; i<500; ++i) {
         JsonParser parser;
         Value value = parser.parse(str);
-        if (i == 0) value0 = value;
-        else value.free();
+        value.free();
     }
-    
     clock_t t1 = clock();
     printf("parse: %ld\n", (t1-t0)*1000/CLOCKS_PER_SEC);
+
     /*std::string jstr;
     value0.toJson(jstr);
-    printf("%s\n", jstr.c_str());*/
-    value0.free();
+    printf("%s\n", jstr.c_str());
+    value0.free();*/
+}
+
+/////////////////////////////////////////////////////////////////
+// Min Size
+/////////////////////////////////////////////////////////////////
+
+bool packJson(std::string& jsonstr, std::ostream& out) {
+    JsonParser parser;
+    Value v = parser.parse(jsonstr);
+    JCWriter c;
+    c.write(v, out);
+    v.free();
+    return true;
+}
+
+
+void writeTest() {
+    std::ifstream in("./data.json");
+    std::string str = "";
+    std::string tmp;
+    while (getline(in, tmp)) str += tmp;
+
+    std::ofstream out("./data_out.jc", std::ofstream::binary | std::ofstream::out);
+    packJson(str, out);
+}
+
+void readTest() {
+    std::ifstream inStream("./data_out.jc", std::ifstream::binary | std::ifstream::in);
+    inStream.seekg(0, std::ios::end);
+    long length = inStream.tellg();
+    inStream.seekg(0, std::ios::beg);
+
+    char* buffer = (char*)malloc(length);
+    inStream.read(buffer, length);
+
+    clock_t t0 = clock();
+    for (int i = 0; i < 500; ++i) {
+        JCReader r(buffer, length);
+        Value value = r.read();
+        value.free();
+    }
+    clock_t t1 = clock();
+    printf("decompress: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
+
+
+    //JCReader r(buffer, length);
+    //Value value0 = r.read();
+    //std::string str;
+    //value0.toJson(str);
+    //printf("%s\n", str.c_str());
+    //value0.free();
+
+    free(buffer);
+}
+
+/////////////////////////////////////////////////////////////////
+// Fast Decode
+/////////////////////////////////////////////////////////////////
+
+bool packJson2(std::string& jsonstr, std::ostream& out) {
+    JsonParser parser;
+    Value v = parser.parse(jsonstr);
+    JEncoder encoder;
+    auto buffer = encoder.encode(v);
+    out.write(buffer.data(), buffer.size());
+    v.free();
+    return true;
 }
 
 void writeTest2() {
@@ -42,8 +107,7 @@ void writeTest2() {
     while (getline(in, tmp)) str += tmp;
     
     std::ofstream out("./data_out.jc2", std::ofstream::binary | std::ofstream::out);
-    JEncoder c;
-    c.packJson(str, out);
+    packJson2(str, out);
 }
 
 void readTest2() {
@@ -64,47 +128,16 @@ void readTest2() {
     clock_t t1 = clock();
     printf("decode: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
 
-    /*std::string str;
-    value0->toJson(str);
-    printf("%s\n", str.c_str());*/
+    //std::string str;
+    //value0->toJson(str);
+    //printf("%s\n", str.c_str());
 
     free(buffer);
 }
 
-void writeTest() {
-    std::ifstream in("./data.json");
-    std::string str = "";
-    std::string tmp;
-    while (getline(in, tmp)) str += tmp;
-
-    std::ofstream out("./data_out.jc", std::ofstream::binary | std::ofstream::out);
-    JCWriter c;
-    c.packJson(str, out);
-}
-
-void readTest() {
-    std::ifstream inStream("./data_out.jc", std::ifstream::binary | std::ifstream::in);
-    std::stringstream tmp;
-    tmp << inStream.rdbuf();
-
-    clock_t t0 = clock();
-    Value value0;
-    for (int i = 0; i < 500; ++i) {
-        tmp.seekg(0);
-        JCReader r;
-        Value value = r.read(tmp);
-        if (i == 0) value0 = value;
-        else value.free();
-    }
-    clock_t t1 = clock();
-    printf("decompress: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
-
-    /*std::string str;
-    value0.toJson(str);
-    printf("%s\n", str.c_str());*/
-
-    value0.free();
-}
+/////////////////////////////////////////////////////////////////
+// Tools
+/////////////////////////////////////////////////////////////////
 
 void convert(const char *from, const char *to) {
     std::ifstream in(from);
@@ -113,8 +146,7 @@ void convert(const char *from, const char *to) {
     while (getline(in, tmp)) str += tmp;
     
     std::ofstream out(to);
-    JEncoder c;
-    c.packJson(str, out);
+    packJson(str, out);
 }
 
 void dump(const char *from) {
@@ -123,14 +155,22 @@ void dump(const char *from) {
     long length = inStream.tellg();
     inStream.seekg(0, std::ios::beg);
 
-    char *buffer = (char*)malloc(length);
+    char* buffer = (char*)malloc(length);
     inStream.read(buffer, length);
 
-    Value *json = JEncoder::decode(buffer, length);
+    JCReader r(buffer, length);
+    Value value = r.read();
+    std::string str;
+    value.toJson(str);
+    printf("%s\n", str.c_str());
+    value.free();
+
+    /*Value *json = JEncoder::decode(buffer, length);
     std::string str;
     json->toJson(str);
-    printf("%s\n", str.c_str());
-    json->free();
+    printf("%s\n", str.c_str());*/
+
+    free(buffer);
 }
 
 int main(int argc, const char * argv[]) {

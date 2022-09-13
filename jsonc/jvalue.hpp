@@ -27,6 +27,7 @@ namespace jc {
         ImuString,
         ImuArray,
         ImuObject,
+        StringRef,
     };
     
     class JCMap;
@@ -46,10 +47,10 @@ namespace jc {
             int64_t i;
             double d;
             bool b;
-            char *str;
+            char *str; //String, StringRef
             JCArray *array;
             JCMap *map;
-            ImuInfo imuInfo;
+            ImuInfo imuInfo; //ImuString, ImuArray, ImuObject
         } value;
         
         Type _type;
@@ -79,9 +80,11 @@ namespace jc {
         size_t size();
         bool has(const std::string &name);
         
-        Value *operator[](size_t i);
-        Value *operator[](const std::string &name);
-        
+        Value* operator[](size_t i) { return get(i); }
+        Value* operator[](const std::string& name) { return get(name); }
+        Value* get(size_t i);
+        Value* get(const std::string& name);
+
         bool set(const std::string& key, Value val);
         bool add(Value val);
         Value *getProp(int i, std::string& key);
@@ -89,35 +92,11 @@ namespace jc {
         void toJson(std::string &json, int level = 0);
         
         Value clone();
-    };
-    
-    class JCArray {
-    public:
-        std::vector<Value> array;
-    public:
-        ~JCArray();
-        
-        void reserve(size_t size) { array.reserve(size); }
-    };
-    
-    class JCMap {
-        std::vector<std::pair<std::string,Value> > properties;
-        std::unordered_map<std::string, size_t> *map = NULL;
-    public:
-        ~JCMap();
-        
-        void reserve(size_t size);
-        
-        size_t size() { return properties.size(); }
-        const std::string &key(size_t i);
-        Value &val(size_t i);
-        Value &get(const std::string &name);
-        void set(const std::string &key, Value val);
-        void _add(const std::string& key, Value val);
-        bool has(const std::string &name);
     private:
-        std::unordered_map<std::string, size_t> &getMap();
+        void _add(const std::string& key, Value val);
     };
+    
+
     
 }//ns
 

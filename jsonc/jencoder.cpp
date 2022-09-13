@@ -10,16 +10,6 @@
 
 using namespace jc;
 
-bool JEncoder::packJson(std::string &jsonstr, std::ostream &out) {
-
-    JsonParser parser;
-    Value v = parser.parse(jsonstr);
-    auto buffer = encode(v);
-    out.write(buffer.data(), buffer.size());
-    v.free();
-    return true;
-}
-
 void JEncoder::fillEmpty(int size) {
     buffer.resize(buffer.size()+size);
 }

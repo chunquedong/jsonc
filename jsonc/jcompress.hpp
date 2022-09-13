@@ -49,9 +49,7 @@ enum jc_typeExt {
 class JCWriter {
     std::map<const std::string, size_t> stringTable;
     std::vector<std::string> stringPool;
-public:
-    bool packJson(std::string &jsonstr, std::ostream &outStream);
-    
+public:    
     void write(Value &v, std::ostream &outStream);
 private:
     void writeValue(Value &v, std::ostream &outStream);
@@ -60,10 +58,27 @@ private:
 
 class JCReader {
     std::vector<Value> pool;
+    char* buffer;
+    int size;
+    int pos;
 public:
-    Value read(std::istream &inStream);
+    JCReader(char* buf, int size) : buffer(buf), size(size), pos(0) {}
+    Value read();
 private:
-    Value readValue(std::istream &inStream);
+
+    /**
+    * Must keep buf memery invalide.
+    */
+    Value readValue();
+
+public:
+    bool readData(char* data, int len);
+    int readByte() {
+        if (pos < size) {
+            return buffer[pos++];
+        }
+        return -1;
+    }
 };
 
 }//ns
