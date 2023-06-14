@@ -27,9 +27,9 @@ namespace jc {
         std::string str;
         std::string &input;
         
-        char cur;
+        int cur;
         int pos;
-        
+        std::string error;
     public:
         JsonParser() : input(str), cur(-1), pos(-1) {}
         
@@ -41,6 +41,8 @@ namespace jc {
             skipWhitespace();
             return parseVal();
         }
+
+        const std::string& getError() { return error; }
         
     private:
         Value parseObj();
@@ -51,26 +53,33 @@ namespace jc {
         Value parseArray();
         std::string escape();
     private:
-        std::exception err(const std::string &msg);
     
         void consume(int i = 1) {
             pos += i;
             if (pos < input.size()) {
-                cur = input[pos];
+                cur = (unsigned char)input[pos];
             } else {
                 cur = -1;
             }
         }
         
-        bool maybe(char tt) {
+        bool maybe(int tt) {
             if (cur != tt) return false;
             consume();
             return true;
         }
         
-        void expect(char tt) {
-            if (cur < 0) throw err("Unexpected end of stream");
-            if (cur != tt) throw err("Expected Error");
+        void expect(int tt) {
+            if (cur < 0) {
+                error = ("Unexpected end of stream");
+                return;
+            }
+            else if (cur != tt) {
+                char buf[128];
+                snprintf(buf, 128, "'%c' Expected, got '%c' at %d", tt, cur, pos);
+                error = buf;
+                return;
+            }
             consume();
         }
         

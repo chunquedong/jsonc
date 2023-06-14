@@ -27,7 +27,11 @@ void testParse() {
     clock_t t1 = clock();
     printf("parse: %ld\n", (t1-t0)*1000/CLOCKS_PER_SEC);
 
-    /*std::string jstr;
+    
+    /*JsonParser parser;
+    Value value0 = parser.parse(str);
+    printf("%s\n", parser.getError().c_str());
+    std::string jstr;
     value0.toJson(jstr);
     printf("%s\n", jstr.c_str());
     value0.free();*/

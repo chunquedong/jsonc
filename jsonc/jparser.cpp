@@ -11,38 +11,30 @@
 
 using namespace jc;
 
-static bool isDigit(char c) {
+static bool isDigit(int c) {
     if (c == '-' || c == 'e' || c == 'E' || c == '.' || (c <= '9' && c >= '0') ) {
         return true;
     }
     return false;
 }
 
-std::exception JsonParser::err(const std::string &msg) {
-    int s = pos - 10;
-    if (s < 0) s = 0;
-    int e = pos + 10;
-    if (e > input.size()) e = (int)input.size();
-    
-    std::string context = input.substr(s, pos-s) + "^" + input.substr(pos, e-pos);
-    printf("parse error at: %s\n", context.c_str());
-    
-    return std::logic_error(msg);
-}
-
 Value JsonParser::parseObj() {
     Value obj(Type::Object);
     skipWhitespace();
-    expect((char)JsonToken::objectStart);
+    expect((int)JsonToken::objectStart);
     while (true)
     {
         skipWhitespace();
-        if (maybe((char)JsonToken::objectEnd)) return obj;
+        if (maybe((int)JsonToken::objectEnd)) return obj;
         parsePair(obj);
-        if (!maybe((char)JsonToken::comma)) break;
+        if (!maybe((int)JsonToken::comma)) break;
+        if (error.size() > 0) break;
     }
     
-    expect((char)JsonToken::objectEnd);
+    expect((int)JsonToken::objectEnd);
+    /*if (error.size() > 0) {
+        return Value();
+    }*/
     return obj;
 }
 
@@ -55,7 +47,7 @@ void JsonParser::parsePair(Value obj) {
     
     skipWhitespace();
     
-    expect((char)JsonToken::colon);
+    expect((int)JsonToken::colon);
     skipWhitespace();
     
     Value val = parseVal();
@@ -65,7 +57,7 @@ void JsonParser::parsePair(Value obj) {
 }
 
 Value JsonParser::parseVal() {
-    if (cur == (char)JsonToken::quote) {
+    if (cur == (int)JsonToken::quote) {
         Value value(Type::String);
         std::string str;
         parseStr(str);
@@ -73,8 +65,8 @@ Value JsonParser::parseVal() {
         return value;
     }
     else if (isDigit(cur)) return parseNum();
-    else if (cur == (char)JsonToken::objectStart) return parseObj();
-    else if (cur == (char)JsonToken::arrayStart) {
+    else if (cur == (int)JsonToken::objectStart) return parseObj();
+    else if (cur == (int)JsonToken::arrayStart) {
         return parseArray();
     }
     else if (cur == 't') {
@@ -98,8 +90,12 @@ Value JsonParser::parseVal() {
         return Value;
     }
     
-    if (cur < 0) throw err("Unexpected end of stream");
-    throw err("Unexpected token ");
+    if (cur < 0) error = ("Unexpected end of stream");
+    else {
+        char buf[128];
+        snprintf(buf, 128, "Unexpected token '%c' at %d", cur, pos);
+        error = buf;
+    }
 }
 
 Value JsonParser::parseNum() {
@@ -125,9 +121,12 @@ Value JsonParser::parseNum() {
 }
 
 void JsonParser::parseStr(std::string &str) {
-    expect((char)JsonToken::quote);
-    while( cur != (char)JsonToken::quote) {
-        //if (cur < 0) throw err("Unexpected end of str literal");
+    expect((int)JsonToken::quote);
+    while( cur != (int)JsonToken::quote) {
+        if (cur < 0) {
+            error = ("Unexpected end of str literal");
+            break;
+        }
         if (cur == '\\') {
             str += escape();
         }
@@ -136,7 +135,7 @@ void JsonParser::parseStr(std::string &str) {
             consume();
         }
     }
-    expect((char)JsonToken::quote);
+    expect((int)JsonToken::quote);
 }
 
 std::string JsonParser::escape()
@@ -161,9 +160,9 @@ std::string JsonParser::escape()
 
 Value JsonParser::parseArray() {
     Value array(Type::Array);
-    expect((char)JsonToken::arrayStart);
+    expect((int)JsonToken::arrayStart);
     skipWhitespace();
-    if (maybe((char)JsonToken::arrayEnd)) return array;
+    if (maybe((int)JsonToken::arrayEnd)) return array;
         
     while (true)
     {
@@ -171,9 +170,10 @@ Value JsonParser::parseArray() {
         Value val = parseVal();
         array.add(val);
         skipWhitespace();
-        if (!maybe((char)JsonToken::comma)) break;
+        if (!maybe((int)JsonToken::comma)) break;
+        if (error.size() > 0) break;
     }
     skipWhitespace();
-    expect((char)JsonToken::arrayEnd);
+    expect((int)JsonToken::arrayEnd);
     return array;
 }

@@ -189,7 +189,9 @@ void Value::setStr(char* str, bool copy) {
 void Value::setType(Type t) {
     if (t == _type) return;
     if (_type != Type::Null) {
-        throw std::logic_error("type error");
+        printf("type error\n");
+        abort();
+        return;
     }
     _type = t;
     init();
