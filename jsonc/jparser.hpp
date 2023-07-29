@@ -40,7 +40,7 @@ namespace jc {
         JsonNode* parseObj();
         JsonNode* parseVal();
         JsonNode* parseNum();
-        JsonNode* parseStr();
+        JsonNode* parseStr(JsonNode* val = NULL);
         JsonNode* parseArray();
         void parseEscape(char* str);
     private:

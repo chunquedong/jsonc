@@ -27,12 +27,14 @@ JsonNode* JsonParser::parseObj() {
             snprintf(error, 128, "object key must be string, got '%c' at %s", *cur, cur);
             return NULL;
         }
-        JsonNode*key = parseStr();
+        JsonNode key;
+        key._type = Type::String;
+        parseStr(&key);
         skipWhitespace();
         expect(':');
         JsonNode*val = parseVal();
-        if (!key || !val) return NULL;
-        obj->insert_pair(key, val);
+        if (!key.value.str || !val) return NULL;
+        obj->insert_pair(key.value.str, val);
 
         skipWhitespace();
         if (*cur == ',') {
@@ -187,10 +189,11 @@ void JsonParser::parseEscape(char* str)
     }
 }
 
-JsonNode* JsonParser::parseStr() {
+JsonNode* JsonParser::parseStr(JsonNode* val) {
     ++cur;
-
-    JsonNode* val = alloc(Type::String);
+    if (!val) {
+        val = alloc(Type::String);
+    }
     val->value.str = cur;
     char *str = cur;
     while(true) {

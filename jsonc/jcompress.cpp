@@ -74,7 +74,7 @@ void JCWriter::makeStrPool(Value *v) {
         case Type::Object: {
             for (auto p = v->begin(); p != v->end(); ++p) {
                 Value key(Type::String);
-                key.value.str = p.get_name();
+                key.value.str = (char*)p.get_name();
                 Value *val = *p;
                 
                 makeStrPool(&key);
@@ -133,7 +133,7 @@ void JCWriter::writeValue(Value *v, std::ostream &out) {
             writeSize(out, jc_object, v->size());
             for (auto p = v->begin(); p != v->end(); ++p) {
                 Value key(Type::String);
-                key.value.str = p.get_name();
+                key.value.str = (char*)p.get_name();
                 Value* val = *p;
                 writeValue(&key, out);
                 //set value
@@ -256,7 +256,7 @@ Value* JCReader::read() {
     return readValue();
 }
 
-JsonNode* JCReader::readValue() {
+JsonNode* JCReader::readValue(JsonNode* out) {
 
     int c = readByte();
     if (c == EOF) return NULL;
@@ -342,7 +342,8 @@ JsonNode* JCReader::readValue() {
             int64_t size = readSize(this, type, subType);
             if (size < pool.size()) {
                 JsonNode*v = pool[size];
-                JsonNode* val = alloc(Type::String);
+                JsonNode* val = out;
+                if (!val) val = alloc(Type::String);
                 val->value.str = v->value.str;
                 return val;
             }
@@ -353,9 +354,10 @@ JsonNode* JCReader::readValue() {
             int64_t size = readSize(this, type, subType);
             JsonNode* value = alloc(Type::Object);
             for (int i=0; i<size; ++i) {
-                JsonNode* k = readValue();
+                JsonNode key;
+                readValue(&key);
                 JsonNode* v = readValue();
-                value->insert_pair(k, v);
+                value->insert_pair(key.value.str, v);
             }
             value->reverse();
             return value;

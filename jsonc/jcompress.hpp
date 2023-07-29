@@ -76,7 +76,7 @@ private:
     /**
     * Must keep buf memery invalide.
     */
-    JsonNode* readValue();
+    JsonNode* readValue(JsonNode* out = NULL);
 
 public:
     bool readData(char* data, int len);

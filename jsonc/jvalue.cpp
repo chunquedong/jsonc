@@ -150,10 +150,10 @@ Value* Value::get(const char* name) {
     return NULL;
 }
 
-bool JsonNode::set(JsonNode* key, JsonNode* val) {
+bool JsonNode::set(const char* key, JsonNode* val) {
     assert(_type == Type::Object);
     for (auto p = begin(); p != end(); ++p) {
-        if (strcmp(p->value.str, key->value.str) == 0) {
+        if (strcmp(p.get_name(), key) == 0) {
             return false;
         }
         ++p;
@@ -163,10 +163,10 @@ bool JsonNode::set(JsonNode* key, JsonNode* val) {
     return true;
 }
 
-void JsonNode::insert_pair(JsonNode* key, JsonNode* val) {
+void JsonNode::insert_pair(const char* key, JsonNode* val) {
     assert(_type == Type::Object);
-    val->_next = key;
-    key->_next = value.child;
+    val->name = key;
+    val->_next = value.child;
     value.child = val;
 }
 
@@ -228,12 +228,7 @@ JsonIterator Value::end() {
 
 void JsonIterator::operator++() {
     if (parent->_flag == 0) {
-        if (parent->_type != Type::Object) {
-            cur = cur->_next;
-        }
-        else {
-            cur = cur->_next->_next;
-        }
+        cur = cur->_next;
     }
     else {
         ++index;
@@ -249,12 +244,7 @@ bool JsonIterator::operator!=(const JsonIterator& x) const {
 }
 Value* JsonIterator::operator*() const {
     if (parent->_flag == 0) {
-        if (parent->_type != Type::Object) {
-            return cur;
-        }
-        else {
-            return cur->_next;
-        }
+        return cur;
     }
     else {
         char* buffer = ((char*)parent) - parent->value.imuInfo.selfOffset;
@@ -272,10 +262,10 @@ Value* JsonIterator::operator*() const {
 Value* JsonIterator::operator->() const {
     return operator*();
 }
-char* JsonIterator::get_name() const {
+const char* JsonIterator::get_name() const {
     if (parent->_type != Type::Object) return NULL;
     if (parent->_flag == 0) {
-        return cur->value.str;
+        return cur->name;
     }
     else {
         char* buffer = ((char*)parent) - parent->value.imuInfo.selfOffset;
@@ -358,7 +348,7 @@ void Value::to_json(std::string& json, int level) {
                 json += ",\n";
             }
             makesp(json, level + 1);
-            char* key = p.get_name();
+            const char* key = p.get_name();
             strEscape(json, key);
             json += ": ";
             p->to_json(json, level + 1);

@@ -42,7 +42,7 @@ void JEncoder::makeStrPool(Value *v) {
         case Type::Object: {
             for (auto p = v->begin(); p != v->end(); ++p) {
                 Value key(Type::String);
-                key.value.str = p.get_name();
+                key.value.str = (char*)p.get_name();
                 Value* val = *p;
                 makeStrPool(&key);
                 makeStrPool(val);
@@ -85,7 +85,7 @@ void JEncoder::writeValue(Value *v) {
         fillEmpty(sizeof(int32_t) * size * 2);
         for (auto p = v->begin(); p != v->end(); ++p) {
             Value key(Type::String);
-            key.value.str = p.get_name();
+            key.value.str = (char*)p.get_name();
             Value* val = *p;
 
             std::string name = key.value.str;

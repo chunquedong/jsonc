@@ -46,7 +46,7 @@ namespace jc {
         bool operator!=(const JsonIterator& x) const;
         Value* operator*() const;
         Value* operator->() const;
-        char* get_name() const;
+        const char* get_name() const;
     };
 
     class Value {
@@ -93,12 +93,13 @@ namespace jc {
 
     struct JsonNode: public Value {
         JsonNode* _next;
+        const char* name;
 
-        JsonNode() : _next(NULL) {}
+        JsonNode() : _next(NULL), name(NULL) {}
 
         /** insert and overwrite by key */
-        bool set(JsonNode* key, JsonNode* val);
-        void insert_pair(JsonNode* key, JsonNode* val);
+        bool set(const char* key, JsonNode* val);
+        void insert_pair(const char* key, JsonNode* val);
 
         void insert(JsonNode* val);
         void reverse();
