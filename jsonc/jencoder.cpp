@@ -27,10 +27,10 @@ void JEncoder::writeData(const char *data, int size, int at) {
     }
 }
 
-void JEncoder::makeStrPool(Value &v) {
-    switch (v.type()) {
+void JEncoder::makeStrPool(Value *v) {
+    switch (v->type()) {
         case Type::String: {
-            auto str = v.asStr();
+            auto str = v->as_str();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 size_t i = stringTable.size();
@@ -40,22 +40,18 @@ void JEncoder::makeStrPool(Value &v) {
             break;
         }
         case Type::Object: {
-            for (int i=0; i<v.size(); ++i) {
-                std::string name;
-                Value *val = v.getProp(i, name);
-                Value key;
-                key = name;
-                makeStrPool(key);
-                
-                //set value
-                makeStrPool(*val);
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                Value key(Type::String);
+                key.value.str = p.get_name();
+                Value* val = *p;
+                makeStrPool(&key);
+                makeStrPool(val);
             }
             break;
         }
         case Type::Array: {
-            for (int i=0; i<v.size(); ++i) {
-                Value *sv = v[i];
-                makeStrPool(*sv);
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                makeStrPool(*p);
             }
             break;
         }
@@ -64,31 +60,35 @@ void JEncoder::makeStrPool(Value &v) {
     }
 }
 
-void JEncoder::writeValue(Value &v) {
-    switch (v.type()) {
+void JEncoder::writeValue(Value *v) {
+    switch (v->type()) {
     case Type::String: {
-        Value dup = v;
-        auto str = v.asStr();
-        dup._type = Type::ImuString;
-        dup.value.imuInfo.bufferOffset = buffer.size();
+        Value dup;
+        auto str = v->as_str();
+        dup._type = Type::String;
+        dup._flag = 1;
+        dup.value.imuInfo.selfOffset = buffer.size();
         dup.value.imuInfo.sizeOrPos = stringTable[str];
         writeData((char*)(&dup), sizeof(Value));
         break;
     }
     case Type::Object: {
-        Value dup = v;
-        dup._type = Type::ImuObject;
-        dup.value.imuInfo.bufferOffset = buffer.size();
-        dup.value.imuInfo.sizeOrPos = v.size();
+        Value dup;
+        dup._type = Type::Object;
+        dup._flag = 1;
+        dup.value.imuInfo.selfOffset = buffer.size();
+        int size = v->size();
+        dup.value.imuInfo.sizeOrPos = size;
         writeData((char*)(&dup), sizeof(Value));
 
         int pos = buffer.size();
-        int size = v.size();
         fillEmpty(sizeof(int32_t) * size * 2);
-        for (int i = 0; i < size; ++i) {
-            std::string name;
-            Value *val = v.getProp(i, name);
+        for (auto p = v->begin(); p != v->end(); ++p) {
+            Value key(Type::String);
+            key.value.str = p.get_name();
+            Value* val = *p;
 
+            std::string name = key.value.str;
             int32_t key_pos = stringTable[name];
             writeData((char*)(&key_pos), 4, pos);
             pos += 4;
@@ -97,41 +97,42 @@ void JEncoder::writeValue(Value &v) {
             writeData((char*)(&val_pos), 4, pos);
             pos += 4;
 
-            writeValue(*val);
+            writeValue(val);
         }
         break;
     }
     case Type::Array: {
-        Value dup = v;
-        dup._type = Type::ImuArray;
-        dup.value.imuInfo.bufferOffset = buffer.size();
-        dup.value.imuInfo.sizeOrPos = v.size();
+        Value dup;
+        dup._type = Type::Array;
+        dup._flag = 1;
+        dup.value.imuInfo.selfOffset = buffer.size();
+        int size = v->size();
+        dup.value.imuInfo.sizeOrPos = size;
         writeData((char*)(&dup), sizeof(Value));
 
         int pos = buffer.size();
-        int size = v.size();
-        fillEmpty(sizeof(int32_t)*size);
-        for (int i = 0; i < size; ++i) {
+        fillEmpty(sizeof(int32_t) * size);
+        for (auto p = v->begin(); p != v->end(); ++p) {
             int32_t val_pos = buffer.size();
             writeData((char*)(&val_pos), 4, pos);
             pos += 4;
 
-            Value *sv = v[i];
-            writeValue(*sv);
+            writeValue(*p);
         }
         break;
     }
     default:
-        writeData((char*)(&v), sizeof(Value));
+        Value dup = *v;
+        writeData((char*)(&dup), sizeof(Value));
         break;
     }
 }
 
-std::vector<char> &JEncoder::encode(Value &v) {
+std::vector<char> &JEncoder::encode(Value *v) {
     makeStrPool(v);
 
     writeData("JCXX", 4);
-    int32_t version = 2;
+    int32_t version = 3;
     writeData((char*)(&version), 4);
 
     int header = 8;

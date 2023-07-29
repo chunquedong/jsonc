@@ -11,169 +11,235 @@
 
 using namespace jc;
 
-static bool isDigit(int c) {
-    if (c == '-' || c == 'e' || c == 'E' || c == '.' || (c <= '9' && c >= '0') ) {
-        return true;
-    }
-    return false;
-}
+JsonNode* JsonParser::parseObj() {
+    JsonNode* obj = alloc(Type::Object);
+    obj->value.child = NULL;
+    ++cur;
 
-Value JsonParser::parseObj() {
-    Value obj(Type::Object);
     skipWhitespace();
-    expect((int)JsonToken::objectStart);
+    if (*cur == '}') {
+        ++cur;
+        return obj;
+    }
     while (true)
     {
+        if (*cur != '"') {
+            snprintf(error, 128, "object key must be string, got '%c' at %s", *cur, cur);
+            return NULL;
+        }
+        JsonNode*key = parseStr();
         skipWhitespace();
-        if (maybe((int)JsonToken::objectEnd)) return obj;
-        parsePair(obj);
-        if (!maybe((int)JsonToken::comma)) break;
-        if (error.size() > 0) break;
+        expect(':');
+        JsonNode*val = parseVal();
+        if (!key || !val) return NULL;
+        obj->insert_pair(key, val);
+
+        skipWhitespace();
+        if (*cur == ',') {
+            ++cur;
+            skipWhitespace();
+            continue;
+        }
+        else {
+            break;
+        }
     }
-    
-    expect((int)JsonToken::objectEnd);
-    /*if (error.size() > 0) {
-        return Value();
-    }*/
+    expect('}');
+    obj->reverse();
     return obj;
 }
 
-void JsonParser::parsePair(Value obj) {
-    skipWhitespace();
-    //Value value(Type::String);
-    std::string str;
-    parseStr(str);
-    //value = str;
-    
-    skipWhitespace();
-    
-    expect((int)JsonToken::colon);
-    skipWhitespace();
-    
-    Value val = parseVal();
-    skipWhitespace();
-    
-    obj._add(str, val);
-}
-
-Value JsonParser::parseVal() {
-    if (cur == (int)JsonToken::quote) {
-        Value value(Type::String);
-        std::string str;
-        parseStr(str);
-        value = str;
-        return value;
-    }
-    else if (isDigit(cur)) return parseNum();
-    else if (cur == (int)JsonToken::objectStart) return parseObj();
-    else if (cur == (int)JsonToken::arrayStart) {
+JsonNode* JsonParser::parseVal() {
+begin:
+    switch (*cur) {
+    case '"':
+        return parseStr();
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '-':
+        return parseNum();
+    case '{':
+        return parseObj();
+    case '[':
         return parseArray();
-    }
-    else if (cur == 't') {
+    case 't': {
         //"true"
-        consume(4);
-        Value Value(Type::Boolean);
-        Value = true;
-        return Value;
+        cur += 4;
+        JsonNode*val = alloc(Type::Boolean);
+        val->value.b = true;
+        return val;
     }
-    else if (cur == 'f') {
+    case 'f': {
         //"false"
-        consume(5);
-        Value Value(Type::Boolean);
-        Value = false;
-        return Value;
+        cur += 5;
+        JsonNode*val = alloc(Type::Boolean);
+        val->value.b = false;
+        return val;
     }
-    else if (cur == 'n') {
+    case 'n': {
         //"null"
-        consume(4);
-        Value Value(Type::Null);
-        return Value;
+        cur += 4;
+        JsonNode*val = alloc(Type::Null);
+        return val;
     }
-    
-    if (cur < 0) error = ("Unexpected end of stream");
-    else {
-        char buf[128];
-        snprintf(buf, 128, "Unexpected token '%c' at %d", cur, pos);
-        error = buf;
+    case '\t':
+    case '\n':
+    case '\r':
+    case ' ': {
+        ++cur;
+        goto begin;
+    }
+    default:
+        if (*cur == 0) snprintf(error, 128, "Unexpected end of stream");
+        else {
+            snprintf(error, 128, "Unexpected token '%c' at %s", *cur, cur);
+        }
+        return NULL;
     }
 }
 
-Value JsonParser::parseNum() {
-    std::string str;
+JsonNode* JsonParser::parseNum() {
+    JsonNode*val = alloc(Type::Integer);
+
+    char *start = cur;
+    if (*cur == '-') ++cur;
     while (true) {
-        if (isDigit(cur)) {
-            str += cur;
-            consume();
-        } else {
+        char c = *cur;
+        if (c == '.' || c == 'E' || c == 'e') {
+            val->_type = Type::Double;
             break;
         }
-    }
-    Value Value;
-    if (str.find('.') != std::string::npos || str.find('E') != std::string::npos) {
-        double d = atof(str.c_str());
-        Value = d;
-        return Value;
-    } else {
-        int64_t i = atoll(str.c_str());
-        Value = i;
-        return Value;
-    }
-}
-
-void JsonParser::parseStr(std::string &str) {
-    expect((int)JsonToken::quote);
-    while( cur != (int)JsonToken::quote) {
-        if (cur < 0) {
-            error = ("Unexpected end of str literal");
-            break;
-        }
-        if (cur == '\\') {
-            str += escape();
+        else if ((c <= '9' && c >= '0')) {
+            ++cur;
+            continue;
         }
         else {
-            str += (cur);
-            consume();
+            break;
         }
     }
-    expect((int)JsonToken::quote);
-}
 
-std::string JsonParser::escape()
-{
-    // consume slash
-    expect('\\');
-    std::string str;
-    
-    // check basics
-    switch (cur) {
-        case 'b':   consume(); str += '\b'; break;
-        case 'f':   consume(); str += '\f'; break;
-        case 'n':   consume(); str += '\n'; break;
-        case 'r':   consume(); str += '\r'; break;
-        case 't':   consume(); str += '\t'; break;
-        case '"':   consume(); str += '"'; break;
-        case '\\':  consume(); str += '\\'; break;
-        case '/':   consume(); str += '/'; break;
+    if (val->_type == Type::Double) {
+        char *end;
+        double v = strtod(start, &end);
+        val->value.d = v;
+        cur = end;
     }
-    return str;
+    else {
+        int64_t v = atoll(start);
+        val->value.i = v;
+    }
+    return val;
 }
 
-Value JsonParser::parseArray() {
-    Value array(Type::Array);
-    expect((int)JsonToken::arrayStart);
-    skipWhitespace();
-    if (maybe((int)JsonToken::arrayEnd)) return array;
+static inline bool isxdigit(char c) {
+    return (c >= '0' && c <= '9') || ((c & ~' ') >= 'A' && (c & ~' ') <= 'F');
+}
+
+static inline int char2int(char c) {
+    if (c <= '9')
+        return c - '0';
+    return (c & ~' ') - 'A' + 10;
+}
+
+void JsonParser::parseEscape(char* str)
+{
+    // check basics
+    switch (*cur) {
+    case 'b':   *str = '\b'; ++cur; break;
+    case 'f':   *str = '\f'; ++cur; break;
+    case 'n':   *str = '\n'; ++cur; break;
+    case 'r':   *str = '\r'; ++cur; break;
+    case 't':   *str = '\t'; ++cur; break;
+    case '"':   *str = '"'; ++cur; break;
+    case '\\':  *str = '\\'; ++cur; break;
+    case '/':   *str = '/'; ++cur; break;
+    case 'u':
+        int c = 0;
+        for (int i = 0; i < 4; ++i) {
+            if (isxdigit(*++cur)) {
+                c = c * 16 + char2int(*cur);
+            }
+            else {
+                snprintf(error, 128, "unknow hex char %d", *cur);
+            }
+        }
+        if (c < 0x80) {
+            *str = c;
+        }
+        else if (c < 0x800) {
+            *str++ = 0xC0 | (c >> 6);
+            *str = 0x80 | (c & 0x3F);
+        }
+        else {
+            *str++ = 0xE0 | (c >> 12);
+            *str++ = 0x80 | ((c >> 6) & 0x3F);
+            *str = 0x80 | (c & 0x3F);
+        }
+        break;
+    }
+}
+
+JsonNode* JsonParser::parseStr() {
+    ++cur;
+
+    JsonNode* val = alloc(Type::String);
+    val->value.str = cur;
+    char *str = cur;
+    while(true) {
+        switch (*cur)
+        {
+        case 0:
+            snprintf(error, 128, "Unexpected end of stream in paserStr");
+            return NULL;
+        case '\\':
+            ++cur;
+            parseEscape(str);
+            break;
+        case '"':
+            *str = 0;
+            ++cur;
+            return val;
         
+        default:
+            ++cur;
+            ++str;
+            break;
+        }
+    }
+    return NULL;
+}
+
+JsonNode* JsonParser::parseArray() {
+    ++cur;
+    JsonNode* array = alloc(Type::Array);
+    array->value.child = NULL;
+
+    skipWhitespace();
+    if (*cur == ']') {
+        ++cur;
+        return array;
+    }
     while (true)
     {
+        JsonNode* val = parseVal();
+        if (!val) return NULL;
+        array->insert(val);
         skipWhitespace();
-        Value val = parseVal();
-        array.add(val);
-        skipWhitespace();
-        if (!maybe((int)JsonToken::comma)) break;
-        if (error.size() > 0) break;
+        if (*cur != ',') break;
+        else {
+            ++cur;
+        }
     }
-    skipWhitespace();
-    expect((int)JsonToken::arrayEnd);
+
+    expect(']');
+    array->reverse();
     return array;
 }

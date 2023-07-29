@@ -50,26 +50,33 @@ class JCWriter {
     std::map<const std::string, size_t> stringTable;
     std::vector<std::string> stringPool;
 public:    
-    void write(Value &v, std::ostream &outStream);
+    void write(Value *v, std::ostream &outStream);
 private:
-    void writeValue(Value &v, std::ostream &outStream);
-    void makeStrPool(Value &v);
+    void writeValue(Value *v, std::ostream &outStream);
+    void makeStrPool(Value *v);
 };
 
 class JCReader {
-    std::vector<Value> pool;
+    std::vector<JsonNode*> pool;
     char* buffer;
     int size;
     int pos;
+    JsonAllocator *allocator;
 public:
-    JCReader(char* buf, int size) : buffer(buf), size(size), pos(0) {}
-    Value read();
+    JCReader(char* buf, int size, JsonAllocator *allocator) : buffer(buf), size(size), pos(0), 
+        allocator(allocator){}
+    Value* read();
 private:
+    inline JsonNode* alloc(Type type) {
+        JsonNode* v = (JsonNode*)allocator->allocate(sizeof(JsonNode));
+        v->_type = type;
+        return v;
+    }
 
     /**
     * Must keep buf memery invalide.
     */
-    Value readValue();
+    JsonNode* readValue();
 
 public:
     bool readData(char* data, int len);

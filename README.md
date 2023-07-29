@@ -1,14 +1,14 @@
 # jsonc
-Compress JSON to binary format.
+Parse JSON string and compress to binary format.
 
-20% smaller and 50% faster.
+20% smaller and 20% faster.
 
 ## Compare with JSON Text
 
 |  Format   |  Size     | Parse/Decode Time |
 |-----------|-----------|-------------------|
-| version 1 |   20%     |     50%           |
-| version 2 |   90%     |     0             |
+| version 1 |   20%     |     20%           |
+| version 3 |   90%     |     0             |
 
 
 ## Format (version 1)

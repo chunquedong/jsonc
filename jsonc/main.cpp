@@ -9,50 +9,68 @@
 #include "jcompress.hpp"
 #include "jparser.hpp"
 #include <time.h>
+#include <fstream>
 
 using namespace jc;
 
+#define LOOP_TIMES 1000
+
+//#define TEST_FILE "D:\\workspace\\source\\nativejson-benchmark\\data\\twitter.json"
+#define TEST_FILE "./data.json"
+
 void testParse() {
-    std::ifstream in("./data.json");
+    const char* file = TEST_FILE;
+
+    std::ifstream in(file);
     std::string str = "";
     std::string tmp;
     while (getline(in, tmp)) str += tmp;
     
     clock_t t0 = clock();
-    for (int i=0; i<500; ++i) {
-        JsonParser parser;
-        Value value = parser.parse(str);
-        value.free();
+    for (int i=0; i< LOOP_TIMES; ++i) {
+        std::string copy = str;
+        JsonAllocator allocator;
+        JsonParser parser(&allocator);
+        Value *value = parser.parse((char*)copy.c_str());
     }
     clock_t t1 = clock();
     printf("parse: %ld\n", (t1-t0)*1000/CLOCKS_PER_SEC);
 
-    
-    /*JsonParser parser;
-    Value value0 = parser.parse(str);
-    printf("%s\n", parser.getError().c_str());
-    std::string jstr;
-    value0.toJson(jstr);
-    printf("%s\n", jstr.c_str());
-    value0.free();*/
+#if 0
+    if (true) {
+        std::string copy = str;
+        JsonAllocator allocator;
+        JsonParser parser(&allocator);
+        Value *value0 = parser.parse((char*)copy.c_str());
+
+        if (parser.getError()[0] == 0) {
+            std::string jstr;
+            value0->to_json(jstr);
+            puts(jstr.c_str());
+        }
+        else {
+            puts(parser.getError());
+        }
+    }
+#endif
 }
 
 /////////////////////////////////////////////////////////////////
 // Min Size
 /////////////////////////////////////////////////////////////////
+#ifndef JC_NO_COMPRESS
 
 bool packJson(std::string& jsonstr, std::ostream& out) {
-    JsonParser parser;
-    Value v = parser.parse(jsonstr);
+    JsonAllocator allocator;
+    JsonParser parser(&allocator);
+    Value* v = parser.parse((char*)jsonstr.c_str());
     JCWriter c;
     c.write(v, out);
-    v.free();
     return true;
 }
 
-
 void writeTest() {
-    std::ifstream in("./data.json");
+    std::ifstream in(TEST_FILE);
     std::string str = "";
     std::string tmp;
     while (getline(in, tmp)) str += tmp;
@@ -71,40 +89,45 @@ void readTest() {
     inStream.read(buffer, length);
 
     clock_t t0 = clock();
-    for (int i = 0; i < 500; ++i) {
-        JCReader r(buffer, length);
-        Value value = r.read();
-        value.free();
+    for (int i = 0; i < LOOP_TIMES; ++i) {
+        JsonAllocator allocator;
+        JCReader r(buffer, length, &allocator);
+        Value* value = r.read();
+        //value.free();
     }
     clock_t t1 = clock();
     printf("decompress: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
 
-    //JCReader r(buffer, length);
-    //Value value0 = r.read();
-    //std::string str;
-    //value0.toJson(str);
-    //printf("%s\n", str.c_str());
+#if 0
+    JsonAllocator allocator;
+    JCReader r(buffer, length, &allocator);
+    Value* value0 = r.read();
+    std::string str;
+    value0->to_json(str);
+    printf("%s\n", str.c_str());
     //value0.free();
-
+#endif
     free(buffer);
 }
-
+#endif
 /////////////////////////////////////////////////////////////////
 // Fast Decode
 /////////////////////////////////////////////////////////////////
+#ifndef NO_JC_ENCODER
 
 bool packJson2(std::string& jsonstr, std::ostream& out) {
-    JsonParser parser;
-    Value v = parser.parse(jsonstr);
+    JsonAllocator allocator;
+    JsonParser parser(&allocator);
+    Value* v = parser.parse((char*)jsonstr.c_str());
     JEncoder encoder;
     auto buffer = encoder.encode(v);
     out.write(buffer.data(), buffer.size());
-    v.free();
+    //v.free();
     return true;
 }
 
 void writeTest2() {
-    std::ifstream in("./data.json");
+    std::ifstream in(TEST_FILE);
     std::string str = "";
     std::string tmp;
     while (getline(in, tmp)) str += tmp;
@@ -125,19 +148,20 @@ void readTest2() {
 
     clock_t t0 = clock();
     Value *value0;
-    for (int i = 0; i < 500; ++i) {
+    for (int i = 0; i < LOOP_TIMES; ++i) {
         value0 = JEncoder::decode(buffer, length);
     }
     clock_t t1 = clock();
     printf("decode: %ld\n", (t1 - t0) * 1000 / CLOCKS_PER_SEC);
 
-    //std::string str;
-    //value0->toJson(str);
-    //printf("%s\n", str.c_str());
-
+#if 0
+    std::string str;
+    value0->to_json(str);
+    puts(str.c_str());
+#endif
     free(buffer);
 }
-
+#endif
 /////////////////////////////////////////////////////////////////
 // Tools
 /////////////////////////////////////////////////////////////////
@@ -169,22 +193,27 @@ void dump(const char *from) {
     int32_t *version = (int32_t*)(buffer + 4);
 
     if (*version == 2) {
+        printf("unsupport version:%d\n", *version);
+    }
+    else if (*version == 3) {
         Value* json = JEncoder::decode(buffer, length);
         std::string str;
-        json->toJson(str);
-        printf("%s\n", str.c_str());
+        json->to_json(str);
+        puts(str.c_str());
     }
-    else {
-        JCReader r(buffer, length);
-        Value value = r.read();
+    else if (*version == 1) {
+        JsonAllocator allocator;
+        JCReader r(buffer, length, &allocator);
+        Value* value = r.read();
         std::string str;
-        value.toJson(str);
-        printf("%s\n", str.c_str());
-        value.free();
+        value->to_json(str);
+        puts(str.c_str());
+        //value.free();
     }
 
     free(buffer);
 }
+
 
 int main(int argc, const char * argv[]) {
     

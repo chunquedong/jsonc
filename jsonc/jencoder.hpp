@@ -25,16 +25,17 @@ class JEncoder {
     std::vector<std::string> stringPool;
     std::vector<char> buffer;
 public:    
-    std::vector<char> &encode(Value &v);
+    std::vector<char> &encode(Value* v);
 
     static Value *decode(char *buffer, int size) {
         int32_t *jmp = (int32_t*)(buffer+8);
         if (*jmp > size) return NULL;
-        return (Value*)(buffer + *jmp);
+        Value* val = (Value*)(buffer + *jmp);
+        return val;
     }
 private:
-    void makeStrPool(Value &v);
-    void writeValue(Value &v);
+    void makeStrPool(Value *v);
+    void writeValue(Value *v);
     void writeData(const char *data, int size, int at = -1);
     void fillEmpty(int size);
 };

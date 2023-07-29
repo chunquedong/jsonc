@@ -58,109 +58,11 @@ static void writeSize(std::ostream &out, uint8_t type, int64_t val) {
         return;
     }
 }
-/*
-static bool tryWriteAsCoords(std::string &str, std::ostream &out) {
-    
-    if (str.size() < 50) return false;
-    
-    char *pos = NULL;
-    const char *start = str.c_str();
-    
-    vector<double> coords;
-    char sepa1 = 0;
-    char sepa2 = 0;
-    int component = 0;
-    
-    const char *instr = start;
-    while (instr) {
-        pos = NULL;
-        double d = strtod(instr, &pos);
-        if (pos == instr || pos == NULL) {
-            return false;
-        }
-        
-        if (*pos == 0) {
-            break;
-        }
-        
-        coords.push_back(d);
-        
-        if (sepa1 == 0) {
-            sepa1 = *pos;
-        }
-        else if (sepa2 == 0) {
-            sepa2 = *pos;
-            component = (int)coords.size();
-        }
-        else if (sepa2 == *pos) {
-            if (coords.size() % component != 0) {
-                return false;
-            }
-        }
-        else if (sepa1 != *pos) {
-            return false;
-        }
-        
-        ++pos;
-        instr = pos;
-    }
-    
-    if (coords.size() == 0 || coords.size() < component*2) return false;
-    
-    vector<double> min;
-    vector<double> max;
-    min.resize(component);
-    max.resize(component);
-    for (int i=0; i<component; ++i) {
-        double d = coords[i];
-        min[i] = d;
-        max[i] = d;
-    }
-    
-    for (size_t i=component,n=coords.size(); i<n; ++i) {
-        size_t j = i % component;
-        double d = coords[i];
-        if (min[j] > d) {
-            min[j] = d;
-        }
-        else if (max[j] < d) {
-            max[j] = d;
-        }
-    }
 
-    vector<double> width;
-    width.resize(component);
-    for (int i=0; i<component; ++i) {
-        double w = max[i] - min[i];
-        width[i] = w;
-    }
-    
-    writeType(out, jc_coninate, coords.size());
-    out << (uint8_t)component;
-    
-    for (int i=0; i<component; ++i) {
-        double d = min[i];
-        out << d;
-    }
-    for (int i=0; i<component; ++i) {
-        double d = max[i];
-        out << d;
-    }
-    
-    for (size_t i=0,n=coords.size(); i<n; ++i) {
-        size_t j = i % component;
-        double s = ((coords[i] - min[j])/width[j]);
-        uint8_t p = (uint8_t)(s * UINT8_MAX);
-        out << p;
-    }
-    
-    return true;
-}
-*/
-void JCWriter::makeStrPool(Value &v) {
-    switch (v.type()) {
+void JCWriter::makeStrPool(Value *v) {
+    switch (v->type()) {
         case Type::String: {
-            auto str = v.asStr();
+            auto str = v->as_str();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 size_t i = stringTable.size();
@@ -170,22 +72,21 @@ void JCWriter::makeStrPool(Value &v) {
             break;
         }
         case Type::Object: {
-            for (int i=0; i<v.size(); ++i) {
-                std::string name;
-                Value *val = v.getProp(i, name);
-                Value key;
-                key = name;
-                makeStrPool(key);
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                Value key(Type::String);
+                key.value.str = p.get_name();
+                Value *val = *p;
+                
+                makeStrPool(&key);
                 
                 //set value
-                makeStrPool(*val);
+                makeStrPool(val);
             }
             break;
         }
         case Type::Array: {
-            for (int i=0; i<v.size(); ++i) {
-                Value *sv = v[i];
-                makeStrPool(*sv);
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                makeStrPool(*p);
             }
             break;
         }
@@ -194,7 +95,7 @@ void JCWriter::makeStrPool(Value &v) {
     }
 }
 
-void JCWriter::write(Value &v, std::ostream &out) {
+void JCWriter::write(Value *v, std::ostream &out) {
     out.write("JCXX", 4);
     int32_t version = 1;
     out.write((char*)(&version), 4);
@@ -213,10 +114,10 @@ void JCWriter::write(Value &v, std::ostream &out) {
     writeValue(v, out);
 }
 
-void JCWriter::writeValue(Value &v, std::ostream &out) {
-    switch (v.type()) {
+void JCWriter::writeValue(Value *v, std::ostream &out) {
+    switch (v->type()) {
         case Type::String: {
-            auto str = v.asStr();
+            auto str = v->as_str();
             auto it = stringTable.find(str);
             if (it == stringTable.end()) {
                 printf("ERROR: miss str pool: %s\n", str);
@@ -226,39 +127,29 @@ void JCWriter::writeValue(Value &v, std::ostream &out) {
             uint8_t type = jc_ref;
             writeSize(out, type, it->second);
             //puts("~");
-            
-            /*
-            if (left.size() > 0) {
-                jute::jValue strVal(JSTRING);
-                strVal.set_string(left);
-                write(strVal, out);
-            }*/
             break;
         }
         case Type::Object: {
-            writeSize(out, jc_object, v.size());
-            for (int i=0; i<v.size(); ++i) {
-                std::string name;
-                Value *val = v.getProp(i, name);
-                Value key;
-                key = name;
-                writeValue(key, out);
-                
+            writeSize(out, jc_object, v->size());
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                Value key(Type::String);
+                key.value.str = p.get_name();
+                Value* val = *p;
+                writeValue(&key, out);
                 //set value
-                writeValue(*val, out);
+                writeValue(val, out);
             }
             break;
         }
         case Type::Array: {
-            writeSize(out, jc_array, v.size());
-            for (int i=0; i<v.size(); ++i) {
-                Value *sv = v[i];
-                writeValue(*sv, out);
+            writeSize(out, jc_array, v->size());
+            for (auto p = v->begin(); p != v->end(); ++p) {
+                writeValue(*p, out);
             }
             break;
         }
         case Type::Boolean: {
-            bool val = v.asBool();
+            bool val = v->as_bool();
             uint8_t subType;
             uint8_t type = jc_primi;
             subType = val ? jc_true : jc_false;
@@ -267,12 +158,12 @@ void JCWriter::writeValue(Value &v, std::ostream &out) {
             break;
         }
         case Type::Integer: {
-            int64_t i = v.asInt();
+            int64_t i = v->as_int();
             writeSize(out, jc_int, i);
             break;
         }
         case Type::Double: {
-            double f = v.asDouble();
+            double f = v->as_double();
             uint8_t subType = 0;
             uint8_t type = jc_float;
             if (f == 0) {
@@ -347,11 +238,11 @@ static int64_t readSize(JCReader *inStream, jc_type &type, uint8_t subType) {
     return subType;
 }
 
-Value JCReader::read() {
+Value* JCReader::read() {
     pos = 8;
 
     if (pos >= size) {
-        return Value();
+        return NULL;
     }
 
     int32_t poolSize = 0;
@@ -365,13 +256,10 @@ Value JCReader::read() {
     return readValue();
 }
 
-Value JCReader::readValue() {
-    /*if (inStream.eof()) {
-        return Value();
-    }*/
-    
+JsonNode* JCReader::readValue() {
+
     int c = readByte();
-    if (c == EOF) return Value();
+    if (c == EOF) return NULL;
     uint8_t t = c;
     //inStream.read((char*)(&t), 1);
     jc_type type = (jc_type)((t >> 4) & 0xff);
@@ -379,64 +267,65 @@ Value JCReader::readValue() {
     
     switch (type) {
         case jc_int: {
-            Value Value(Type::Integer);
+            JsonNode*val = alloc(Type::Integer);
             int64_t size = readSize(this, type, subType);
-            Value = size;
-            return Value;
+            val->value.i = size;
+            return val;
             break;
         }
         case jc_float: {
-            Value Value(Type::Double);
+            JsonNode* val = alloc(Type::Double);
             if (subType < 11) {
-                Value = (double)subType;
+                val->value.d = (double)subType;
             } else if (subType == jc_int64) {
                 double d;
                 readData((char*)(&d), sizeof(double));
-                Value = d;
+                val->value.d = d;
             } else if (subType == jc_int32) {
                 float d;
                 readData((char*)(&d), sizeof(float));
-                Value = d;
+                val->value.d = d;
             } else {
-                //error
+                val->value.d = 0;
             }
-            return Value;
+            return val;
             break;
         }
         case jc_primi: {
             if (subType == jc_null) {
-                return Value(Type::Null);
+                return alloc(Type::Null);
             }
             else if (subType == jc_true) {
-                Value Value(Type::Boolean);
-                Value = true;
-                return Value;
+                JsonNode* val = alloc(Type::Boolean);
+                val->value.b = true;
+                return val;
             }
             else if (subType == jc_false) {
-                Value Value(Type::Boolean);
-                Value = false;
-                return Value;
+                JsonNode* val = alloc(Type::Boolean);
+                val->value.b = false;
+                return val;
             }
             else {
-                return Value();
+                return alloc(Type::Null);
             }
             break;
         }
         case jc_array: {
             int64_t size = readSize(this, type, subType);
-            Value value(Type::Array, size);
+            JsonNode* value = alloc(Type::Array);
             for (int i=0; i<size; ++i) {
-                Value v = readValue();
-                value.add(v);
+                JsonNode*v = readValue();
+                value->insert(v);
             }
+            value->reverse();
             return value;
             break;
         }
         case jc_string: {
-            Value value(Type::StringRef);
+            JsonNode* value = alloc(Type::String);
             int64_t size = readSize(this, type, subType);
 
-            value.value.str = buffer + pos;
+            value->value.str = buffer + pos;
             pos += size + 1;
 
             /*char *str = (char*)malloc(size+1);
@@ -452,21 +341,23 @@ Value JCReader::readValue() {
         case jc_ref: {
             int64_t size = readSize(this, type, subType);
             if (size < pool.size()) {
-                Value v = pool[size];
-                v._type = Type::StringRef;
-                return v;
+                JsonNode*v = pool[size];
+                JsonNode* val = alloc(Type::String);
+                val->value.str = v->value.str;
+                return val;
             }
-            return Value(Type::Null);
+            return alloc(Type::Null);
             break;
         }
         case jc_object: {
             int64_t size = readSize(this, type, subType);
-            Value value(Type::Object, size);
+            JsonNode* value = alloc(Type::Object);
             for (int i=0; i<size; ++i) {
-                Value k = readValue();
-                Value v = readValue();
-                value._add(k.asStr(), v);
+                JsonNode* k = readValue();
+                JsonNode* v = readValue();
+                value->insert_pair(k, v);
             }
+            value->reverse();
             return value;
             break;
         }
@@ -476,6 +367,5 @@ Value JCReader::readValue() {
         }
     }
 
-    Value Value;
-    return Value;
+    return alloc(Type::Null);
 }

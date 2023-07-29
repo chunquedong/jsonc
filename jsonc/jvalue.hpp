@@ -8,15 +8,17 @@
 #ifndef jValue_hpp
 #define jValue_hpp
 
+#include <inttypes.h>
 #include <vector>
-#include <map>
-#include <unordered_map>
 #include <string>
-#include <cstring>
 
 namespace jc {
+
+    class Value;
+    struct JsonNode;
+    JsonNode* link_reverse(JsonNode* head);
     
-    enum class Type {
+    enum class Type : uint8_t {
         Null,
         String,
         Array,
@@ -24,80 +26,98 @@ namespace jc {
         Integer,
         Double,
         Boolean,
-        ImuString,
-        ImuArray,
-        ImuObject,
-        StringRef,
     };
     
-    class JCMap;
-    class JCArray;
-
     struct ImuInfo {
-        uint32_t bufferOffset;
+        //self offset in buffer
+        uint32_t selfOffset;
+        //Array/Object size or String position
         uint32_t sizeOrPos;
     };
-    
-    class Value {
-        friend class JsonParser;
-        friend class JEncoder;
-        friend class JCReader;
 
+    struct JsonIterator {
+        Value* parent;
+        union
+        {
+            int index;
+            JsonNode* cur;
+        };
+        void operator++();
+        bool operator!=(const JsonIterator& x) const;
+        Value* operator*() const;
+        Value* operator->() const;
+        char* get_name() const;
+    };
+
+    class Value {
+    public:
         union {
             int64_t i;
             double d;
             bool b;
             char *str; //String, StringRef
-            JCArray *array;
-            JCMap *map;
-            ImuInfo imuInfo; //ImuString, ImuArray, ImuObject
+            ImuInfo imuInfo; //_flag == 1
+            JsonNode* child; //Array, Object
         } value;
-        
         Type _type;
-
-    private:
-        void init(size_t reserveSize = 10);
+        uint8_t _flag;
+ 
     public:
-        Value() : _type(Type::Null) { value.i = 0; }
-        Value(Type t, size_t reserveSize = 10);
-        void free();
+        Value(Type t = Type::Null) : _type(t), _flag(0) { value.i = 0; }
         
-        Value &operator=(const int64_t other);
-        Value &operator=(const std::string& other);
-        Value &operator=(const double other);
-        Value &operator=(const bool other);
-        void setStr(char *str, bool copy);
+        void set_int(const int64_t other);
+        void set_double(const double other);
+        void set_bool(const bool other);
+        void set_str(char *str);
         
         Type type() { return _type; }
-        void setType(Type t);
+        void set_type(Type t) { _type = t; }
         
-        const char *asStr(const char *defVal = "");
-        int64_t asInt();
-        double asDouble();
-        bool asBool();
-        bool isNull() { return _type == Type::Null; }
+        const char *as_str(const char *defVal = "");
+        int64_t as_int();
+        double as_double();
+        bool as_bool();
+        bool is_null() { return _type == Type::Null; }
         
         size_t size();
-        bool has(const std::string &name);
-        
-        Value* operator[](size_t i) { return get(i); }
-        Value* operator[](const std::string& name) { return get(name); }
-        Value* get(size_t i);
-        Value* get(const std::string& name);
+        Value* get(const char* name);
 
-        bool set(const std::string& key, Value val);
-        bool add(Value val);
-        Value *getProp(int i, std::string& key);
+        JsonIterator begin();
+        JsonIterator end();
         
-        void toJson(std::string &json, int level = 0);
-        
-        Value clone();
-    private:
-        void _add(const std::string& key, Value val);
+        /**
+        dump to json
+        */
+        void to_json(std::string &json, int level = 0);
+    };
+
+    struct JsonNode: public Value {
+        JsonNode* _next;
+
+        JsonNode() : _next(NULL) {}
+
+        /** insert and overwrite by key */
+        bool set(JsonNode* key, JsonNode* val);
+        void insert_pair(JsonNode* key, JsonNode* val);
+
+        void insert(JsonNode* val);
+        void reverse();
+
+        /** slow than insert */
+        void append(JsonNode* val);
     };
     
+    class JsonAllocator {
+        struct Block {
+            Block* next;
+            size_t used;
+        } *head;
 
-    
+    public:
+        JsonAllocator() : head(nullptr) {};
+        ~JsonAllocator();
+        void* allocate(size_t size);
+    };
 }//ns
 
 
