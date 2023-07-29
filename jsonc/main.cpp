@@ -8,6 +8,7 @@
 #include "jencoder.hpp"
 #include "jcompress.hpp"
 #include "jparser.hpp"
+#include "HimlParser.hpp"
 #include <time.h>
 #include <fstream>
 
@@ -214,6 +215,35 @@ void dump(const char *from) {
     free(buffer);
 }
 
+/////////////////////////////////////////////////////////////////
+// Himl
+/////////////////////////////////////////////////////////////////
+
+void testHiml() {
+    const char* file = "test.himl";
+
+    std::ifstream in(file);
+    std::string str = "";
+    std::string tmp;
+    while (getline(in, tmp)) {
+        str += tmp;
+        str += "\r\n";
+    }
+
+    std::string copy = str;
+    JsonAllocator allocator;
+    HimlParser parser(&allocator);
+    Value* value0 = parser.parse((char*)copy.c_str());
+
+    if (parser.getError()[0] == 0) {
+        std::string jstr;
+        value0->to_json(jstr, true);
+        puts(jstr.c_str());
+    }
+    else {
+        puts(parser.getError());
+    }
+}
 
 int main(int argc, const char * argv[]) {
     
@@ -224,6 +254,7 @@ int main(int argc, const char * argv[]) {
             readTest();
             writeTest2();
             readTest2();
+            testHiml();
             return 0;
         }
     }

@@ -1,14 +1,55 @@
 # jsonc
-Parse JSON string and compress to binary format.
+Parse JSON text and compress to binary format.
 
 20% smaller and 20% faster.
 
-## Compare with JSON Text
+## JSON text parser benchmark
 
-|  Format   |  Size     | Parse/Decode Time |
-|-----------|-----------|-------------------|
-| version 1 |   20%     |     20%           |
-| version 3 |   90%     |     0             |
+|  Name     |  Time     |  Codebase   |
+|-----------|-----------|-------------|
+| gason     |           |     650     |
+| RapidJSON |           |  38,112     |
+| jsonc     |           |     889 (jvalue.* + jparser.*)
+| yyjson    |           |  18,000     |
+
+## Compressed binary format
+
+|  Format   |  Size     | Parse Time |
+|-----------|-----------|------------|
+| JSON text |   100%    |    100%    |
+| version 1 |   20%     |     20%    |
+| version 3 |   90%     |     0      |
+
+
+## HiML parser
+HiML is a JSON like data format for serialization.
+```
+//comment
+name = form
+Pane {
+    x = 1
+    y = 2
+    Button {
+        id = button1
+        x=1
+        y=2
+    }
+    Button {
+        x = 1, y = 2
+    }
+    1,2,3,
+    a
+    b
+    c
+}
+```
+#### Key Idea
+- no array, object as array
+- no data type, metadata in mind
+- quotes is options
+- comma is options
+- no braces for top level object
+- comment by //
 
 
 ## Format (version 1)

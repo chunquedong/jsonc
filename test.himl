@@ -1,0 +1,25 @@
+//comment
+name = form
+Pane {
+    x = 1
+    y = 2
+    Button {
+        id = button1
+        x=1
+        y=2
+    }
+    Button {
+        x = 1, y = 2
+    }
+}
+{
+   a = 1
+   b = 2
+   abc
+   1
+   2
+   3
+   Pane{}
+}
+
+{ a = 1, b = 2, abc, 1, Pane{}, 2, 3 }

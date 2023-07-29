@@ -107,6 +107,9 @@ int64_t Value::as_int() {
     else if (_type == Type::Double) {
         return (int64_t)value.d;
     }
+    else if (_type == Type::String) {
+        return atoll(as_str());
+    }
     return 0;
 }
 
@@ -117,10 +120,16 @@ double Value::as_double() {
     else if (_type == Type::Integer) {
         return (double)value.i;
     }
+    else if (_type == Type::String) {
+        return atof(as_str());
+    }
     return 0;
 }
 bool Value::as_bool() {
     if (_type != Type::Boolean) return false;
+    else if (_type == Type::String) {
+        return strcmp("true", as_str()) == 0;
+    }
     return value.b;
 }
 
@@ -141,10 +150,9 @@ size_t Value::size() {
 Value* Value::get(const char* name) {
     if (_type == Type::Object) {
         for (auto p = begin(); p != end(); ++p) {
-            if (strcmp(p->value.str, name) == 0) {
-                return false;
+            if (strcmp(p.get_name(), name) == 0) {
+                return *p;
             }
-            ++p;
         }
     }
     return NULL;
@@ -302,15 +310,48 @@ static void strEscape(std::string& json, const char* raw) {
     }
 }
 
-void Value::to_json(std::string& json, int level) {
+static bool strNeedEscape(const char* raw) {
+    const char* c = raw;
+    if (!c) return false;
+    while (true) {
+        switch (*c)
+        {
+        case '"':
+        case '//':
+        case ' ':
+        case '\r':
+        case '\n':
+        case '\t':
+        case '{':
+        case '}':
+        case '=':
+        case ',':
+            return true;
+        case 0:
+            return false;
+        default:
+            break;
+        }
+        ++c;
+    }
+    return false;
+}
+
+void Value::to_json(std::string& json, bool isHiml, int level) {
     Type ttype = type();
     switch (ttype) {
-    case Type::String:
-        json += ("\"");
-        strEscape(json, as_str());
-        json += ("\"");
+    case Type::String: {
+        const char* str = as_str();
+        if (!isHiml || strNeedEscape(str)) {
+            json += ("\"");
+            strEscape(json, str);
+            json += ("\"");
+        }
+        else {
+            json += str;
+        }
         break;
-
+    }
     case Type::Integer: {
         char buf[256];
         snprintf(buf, 256, "%lld", value.i);
@@ -330,30 +371,67 @@ void Value::to_json(std::string& json, int level) {
         json += "null";
         break;
     case Type::Array: {
-        json += "[\n";
+        json += isHiml ? "{\n" : "[\n";
         for (auto p = begin(); p != end(); ++p) {
             if (p != begin()) json += ",\n";
             makesp(json, level + 1);
-            p->to_json(json, level + 1);
+            p->to_json(json, isHiml, level + 1);
         }
         json += '\n';
         makesp(json, level);
-        json += "]";
+        json += isHiml ? "}" : "]";
         break;
     }
     case Type::Object: {
+        if (isHiml) {
+            Value* typeName = objectType();
+            if (typeName) {
+                typeName->to_json(json, isHiml, level);
+                json += " ";
+            }
+        }
         json += ("{\n");
+        bool isFirst = true;
         for (auto p = begin(); p != end(); ++p) {
-            if (p != begin()) {
-                json += ",\n";
+            const char* key = p.get_name();
+            if (isHiml) {
+                if (strcmp(key, "_children") == 0 || strcmp(key, "_type") == 0) {
+                    continue;
+                }
+            }
+
+            if (!isFirst) {
+                json += isHiml ? "\n": ",\n";
             }
             makesp(json, level + 1);
-            const char* key = p.get_name();
-            strEscape(json, key);
-            json += ": ";
-            p->to_json(json, level + 1);
+
+            if (isHiml) {
+                strEscape(json, key);
+                json += "=";
+            }
+            else {
+                json += ("\"");
+                strEscape(json, key);
+                json += ("\"");
+                json += ": ";
+            }
+
+            p->to_json(json, isHiml, level + 1);
+            isFirst = false;
         }
         json += '\n';
+
+        if (isHiml) {
+            Value* c = children();
+            if (c) {
+                for (auto p = c->begin(); p != c->end(); ++p) {
+                    if (p != c->begin()) json += "\n";
+                    makesp(json, level + 1);
+                    p->to_json(json, isHiml, level + 1);
+                }
+                json += '\n';
+            }
+        }
         makesp(json, level);
         json += ("}");
         break;

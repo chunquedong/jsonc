@@ -77,18 +77,25 @@ namespace jc {
         int64_t as_int();
         double as_double();
         bool as_bool();
-        bool is_null() { return _type == Type::Null; }
+        bool is_null() {
+            return _type == Type::Null ||
+                (_type == Type::String || strcmp("null", as_str()) == 0);
+        }
         
         size_t size();
         Value* get(const char* name);
 
         JsonIterator begin();
         JsonIterator end();
+
+        //himl
+        Value* children() { return get("_children"); }
+        Value* objectType() { return get("_type"); }
         
         /**
         dump to json
         */
-        void to_json(std::string &json, int level = 0);
+        void to_json(std::string &json, bool isHiml = false, int level = 0);
     };
 
     struct JsonNode: public Value {
