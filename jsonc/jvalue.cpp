@@ -76,8 +76,8 @@ void Value::set_int(const int64_t other) {
     value.i = other;
 }
 
-void Value::set_double(const double other) {
-    set_type(Type::Double);
+void Value::set_float(const double other) {
+    set_type(Type::Float);
     value.d = other;
 }
 
@@ -104,7 +104,7 @@ int64_t Value::as_int() {
     if (_type == Type::Integer) {
         return value.i;
     }
-    else if (_type == Type::Double) {
+    else if (_type == Type::Float) {
         return (int64_t)value.d;
     }
     else if (_type == Type::String) {
@@ -113,8 +113,8 @@ int64_t Value::as_int() {
     return 0;
 }
 
-double Value::as_double() {
-    if (_type == Type::Double) {
+double Value::as_float() {
+    if (_type == Type::Float) {
         return value.d;
     }
     else if (_type == Type::Integer) {
@@ -358,7 +358,7 @@ void Value::to_json(std::string& json, bool isHiml, int level) {
         json += buf;
         break;
     }
-    case Type::Double: {
+    case Type::Float: {
         char buf[256];
         snprintf(buf, 256, "%g", value.d);
         json += buf;

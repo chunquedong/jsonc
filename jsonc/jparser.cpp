@@ -116,7 +116,7 @@ JsonNode* JsonParser::parseNum() {
     while (true) {
         char c = *cur;
         if (c == '.' || c == 'E' || c == 'e') {
-            val->_type = Type::Double;
+            val->_type = Type::Float;
             break;
         }
         else if ((c <= '9' && c >= '0')) {
@@ -128,7 +128,7 @@ JsonNode* JsonParser::parseNum() {
         }
     }
 
-    if (val->_type == Type::Double) {
+    if (val->_type == Type::Float) {
         char *end;
         double v = strtod(start, &end);
         val->value.d = v;

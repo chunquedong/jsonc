@@ -29,7 +29,7 @@ namespace jc {
             return parseVal();
         }
 
-        const char* getError() { return error; }
+        const char* get_error() { return error; }
         
     private:
         inline JsonNode* alloc(Type type) {

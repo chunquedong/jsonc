@@ -20,6 +20,59 @@ Parse JSON text and compress to binary format.
 | version 1 |   20%     |     20%    |
 | version 3 |   90%     |     0      |
 
+## Usage
+
+#### Parser
+```
+//parser
+JsonAllocator allocator;
+JsonParser parser(&allocator);
+Value* value0 = parser.parse((char*)str.c_str());
+
+//check error
+if (!value0 || parser.get_error()[0] != 0) {
+    printf("parser json error: %s\n", parser.get_error());
+    return;
+}
+
+//get value
+Value* node = value0->get("value");
+int a = node->as_int();
+
+//object iteration
+for (auto it = node->begin(); it != node->end(); ++it) {
+    const char* key = it->get_name();
+    const char* val = it->as_str();
+}
+
+//dump json str
+std::string jstr;
+value0->to_json(jstr);
+puts(jstr.c_str());
+```
+
+#### Compress
+```
+//write
+JCWriter c;
+c.write(value, out);
+
+//read
+JsonAllocator allocator;
+JCReader r(buffer, length, &allocator);
+Value* value = r.read();
+```
+
+#### Encode
+```
+//write
+JEncoder encoder;
+auto buffer = encoder.encode(value);
+out.write(buffer.data(), buffer.size());
+
+//read
+value = JEncoder::decode(buffer, length);
+```
 
 ## HiML parser
 HiML is a JSON like data format for serialization.

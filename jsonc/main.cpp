@@ -44,13 +44,13 @@ void testParse() {
         JsonParser parser(&allocator);
         Value *value0 = parser.parse((char*)copy.c_str());
 
-        if (parser.getError()[0] == 0) {
+        if (parser.get_error()[0] == 0) {
             std::string jstr;
             value0->to_json(jstr);
             puts(jstr.c_str());
         }
         else {
-            puts(parser.getError());
+            puts(parser.get_error());
         }
     }
 #endif
@@ -235,13 +235,13 @@ void testHiml() {
     HimlParser parser(&allocator);
     Value* value0 = parser.parse((char*)copy.c_str());
 
-    if (parser.getError()[0] == 0) {
+    if (parser.get_error()[0] == 0) {
         std::string jstr;
         value0->to_json(jstr, true);
         puts(jstr.c_str());
     }
     else {
-        puts(parser.getError());
+        puts(parser.get_error());
     }
 }
 
@@ -254,7 +254,7 @@ int main(int argc, const char * argv[]) {
             readTest();
             writeTest2();
             readTest2();
-            testHiml();
+            //testHiml();
             return 0;
         }
     }

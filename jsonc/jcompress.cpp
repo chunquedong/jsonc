@@ -162,8 +162,8 @@ void JCWriter::writeValue(Value *v, std::ostream &out) {
             writeSize(out, jc_int, i);
             break;
         }
-        case Type::Double: {
-            double f = v->as_double();
+        case Type::Float: {
+            double f = v->as_float();
             uint8_t subType = 0;
             uint8_t type = jc_float;
             if (f == 0) {
@@ -274,7 +274,7 @@ JsonNode* JCReader::readValue(JsonNode* out) {
             break;
         }
         case jc_float: {
-            JsonNode* val = alloc(Type::Double);
+            JsonNode* val = alloc(Type::Float);
             if (subType < 11) {
                 val->value.d = (double)subType;
             } else if (subType == jc_int64) {

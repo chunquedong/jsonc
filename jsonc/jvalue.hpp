@@ -24,7 +24,7 @@ namespace jc {
         Array,
         Object,
         Integer,
-        Double,
+        Float,
         Boolean,
     };
     
@@ -66,7 +66,7 @@ namespace jc {
         Value(Type t = Type::Null) : _type(t), _flag(0) { value.i = 0; }
         
         void set_int(const int64_t other);
-        void set_double(const double other);
+        void set_float(const double other);
         void set_bool(const bool other);
         void set_str(char *str);
         
@@ -75,7 +75,7 @@ namespace jc {
         
         const char *as_str(const char *defVal = "");
         int64_t as_int();
-        double as_double();
+        double as_float();
         bool as_bool();
         bool is_null() {
             return _type == Type::Null ||
