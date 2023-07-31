@@ -7,10 +7,10 @@ Parse JSON text and compress to binary format.
 
 |  Name     |  Time     |  Codebase   |
 |-----------|-----------|-------------|
-| gason     |           |     650     |
-| RapidJSON |           |  38,112     |
-| jsonc     |           |     889 (jvalue.* + jparser.*)
-| yyjson    |           |  18,000     |
+| gason     |    707    |     650     |
+| RapidJSON |   1734    |  38,112     |
+| jsonc     |    984    |     889 (jvalue.* + jparser.*) |
+| yyjson    |    542    |  18,000     |
 
 ## Compressed binary format
 
