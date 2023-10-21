@@ -67,6 +67,12 @@ JsonNode* link_reverse(JsonNode* head) {
     return new_head;
 }
 
+void JsonAllocator::swap(JsonAllocator& other) {
+    Block* head = this->head;
+    this->head = other.head;
+    other.head = head;
+}
+
 /////////////////////////////////////////////////////////////////
 // JSON Value
 /////////////////////////////////////////////////////////////////

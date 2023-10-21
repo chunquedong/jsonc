@@ -122,9 +122,22 @@ namespace jc {
         } *head;
 
     public:
+        void swap(JsonAllocator& other);
         JsonAllocator() : head(nullptr) {};
         ~JsonAllocator();
         void* allocate(size_t size);
+
+        inline JsonNode* allocNode(Type type) {
+            JsonNode* v = (JsonNode*)allocate(sizeof(JsonNode));
+            v->_type = type;
+            return v;
+        }
+
+        inline char* strdup(const char* s) {
+            char* str = (char*)allocate(strlen(s) + 1);
+            strcpy(str, s);
+            return str;
+        }
     };
 }//ns
 
