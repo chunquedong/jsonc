@@ -45,6 +45,25 @@ for (auto it = node->begin(); it != node->end(); ++it) {
     const char* val = it->as_str();
 }
 
+```
+
+#### Write
+
+```
+jc::JsonAllocator allocator;
+jc::JsonNode* root = allocator.allocNode(jc::Type::Object);
+
+root->insert_pair("version", allocator.alloc_str("1.0"));
+
+jc::JsonNode* list = allocator.allocNode(jc::Type::Array);
+auto p1 = allocator.alloc_int(0);
+auto p2 = allocator.alloc_int(1);
+array->insert(p1);
+array->insert(p2);
+array->reverse();
+root->insert_pair(allocator.strdup(propertyName), array);
+root->reverse();
+
 //dump json str
 std::string jstr;
 value0->to_json(jstr);

@@ -138,6 +138,30 @@ namespace jc {
             strcpy(str, s);
             return str;
         }
+
+        JsonNode* alloc_str(const char* s) {
+            JsonNode* value = allocNode(jc::Type::String);
+            value->set_str(strdup(s));
+            return value;
+        }
+
+        JsonNode* alloc_float(double s) {
+            JsonNode* value = allocNode(jc::Type::Float);
+            value->set_float(s);
+            return value;
+        }
+
+        JsonNode* alloc_int(int64_t s) {
+            JsonNode* value = allocNode(jc::Type::Integer);
+            value->set_int(s);
+            return value;
+        }
+
+        JsonNode* alloc_bool(bool s) {
+            JsonNode* value = allocNode(jc::Type::Boolean);
+            value->set_bool(s);
+            return value;
+        }
     };
 }//ns
 
