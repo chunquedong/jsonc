@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <vector>
 #include <string>
+#include <string.h>
 
 namespace jc {
 
