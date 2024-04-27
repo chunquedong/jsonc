@@ -413,7 +413,7 @@ void Value::to_json(std::string& json, bool isHiml, int level) {
 
             if (isHiml) {
                 strEscape(json, key);
-                json += "=";
+                json += " = ";
             }
             else {
                 json += ("\"");
