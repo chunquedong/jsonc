@@ -59,10 +59,19 @@ JsonNode* HimlParser::parseObj(const char* tagName, bool isRoot) {
             //read pair
             if (c == '=') {
                 ++cur;
+                lines += skipWhitespace();
                 JsonNode* val = parseVal();
                 if (!key.value.str || !val) return NULL;
-                obj->insert_pair(key.value.str, val);
-                lines = skipWhitespace();
+                lines += skipWhitespace();
+                if (*cur == '{') {
+                    //tag name
+                    JsonNode* nobj = parseObj(val->value.str);
+                    obj->insert_pair(key.value.str, nobj);
+                }
+                else {
+                    obj->insert_pair(key.value.str, val);
+                }
+                lines += skipWhitespace();
             }
             //read named object
             else if (c == '{') {
