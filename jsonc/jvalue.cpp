@@ -366,7 +366,7 @@ void Value::to_json(std::string& json, bool isHiml, int level) {
     }
     case Type::Float: {
         char buf[256];
-        snprintf(buf, 256, "%g", value.d);
+        snprintf(buf, 256, "%.16g", value.d);
         json += buf;
         break;
     }
