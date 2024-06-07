@@ -164,6 +164,35 @@ Value* Value::get(const char* name) {
     return NULL;
 }
 
+int64_t Value::get_int(const char* name, int64_t defval) {
+    Value* val = get(name);
+    if (val)
+        return val->as_int();
+    else
+        return defval;
+}
+double Value::get_float(const char* name, double defval) {
+    Value* val = get(name);
+    if (val)
+        return val->as_float();
+    else
+        return defval;
+}
+bool Value::get_bool(const char* name, bool defval) {
+    Value* val = get(name);
+    if (val)
+        return val->as_bool();
+    else
+        return defval;
+}
+const char* Value::get_str(const char* name, const char* defval) {
+    Value* val = get(name);
+    if (val)
+        return val->as_str();
+    else
+        return defval;
+}
+
 bool JsonNode::set(const char* key, JsonNode* val) {
     assert(_type == Type::Object);
     for (auto p = begin(); p != end(); ++p) {

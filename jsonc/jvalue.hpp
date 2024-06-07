@@ -86,6 +86,11 @@ namespace jc {
         size_t size();
         Value* get(const char* name);
 
+        int64_t get_int(const char* name, int64_t defval = 0);
+        double get_float(const char* name, double defval = 0);
+        bool get_bool(const char* name, bool defval = false);
+        const char* get_str(const char* name, const char* = "");
+
         JsonIterator begin();
         JsonIterator end();
 
