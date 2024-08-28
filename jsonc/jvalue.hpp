@@ -118,7 +118,7 @@ namespace jc {
         void reverse();
 
         /** slow than insert */
-        void append(JsonNode* val);
+        void _append(JsonNode* val);
     };
     
     class JsonAllocator {

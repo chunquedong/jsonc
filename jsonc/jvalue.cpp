@@ -5,10 +5,11 @@
 //
 
 
-#include "jValue.hpp"
+#include "jvalue.hpp"
 #include <stdlib.h>
 #include <stdexcept>
 #include <assert.h>
+
 
 namespace jc {
 
@@ -110,6 +111,9 @@ int64_t Value::as_int() {
     if (_type == Type::Integer) {
         return value.i;
     }
+    else if (_type == Type::Boolean) {
+        return value.b;
+    }
     else if (_type == Type::Float) {
         return (int64_t)value.d;
     }
@@ -122,6 +126,9 @@ int64_t Value::as_int() {
 double Value::as_float() {
     if (_type == Type::Float) {
         return value.d;
+    }
+    else if (_type == Type::Boolean) {
+        return (double)value.b;
     }
     else if (_type == Type::Integer) {
         return (double)value.i;
@@ -219,7 +226,7 @@ void JsonNode::insert(JsonNode* val) {
     value.child = val;
 }
 
-void JsonNode::append(JsonNode* val) {
+void JsonNode::_append(JsonNode* val) {
     assert(_type == Type::Array);
     JsonNode* p = value.child;
     if (!p) {
