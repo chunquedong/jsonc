@@ -139,9 +139,11 @@ double Value::as_float() {
     return 0;
 }
 bool Value::as_bool() {
-    if (_type != Type::Boolean) return false;
-    else if (_type == Type::String) {
-        return strcmp("true", as_str()) == 0;
+    if (_type != Type::Boolean) {
+        if (_type == Type::String) {
+            return strcmp("true", as_str()) == 0;
+        }
+        return false;
     }
     return value.b;
 }
