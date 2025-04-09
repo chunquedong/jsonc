@@ -1,0 +1,8 @@
+name = jsoncSricTest
+summary = jsoncSricTest
+outType = exe
+version = 1.0
+depends = sric 1.0, jsonc 2.0
+srcDirs = ../../sric/output/jsoncSricTest.cpp
+incDir = ./
+//extIncDirs = ../runtime/
