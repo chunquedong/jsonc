@@ -10,7 +10,7 @@
 
 #include "jvalue.hpp"
 
-namespace jc {
+namespace jsonc {
 
     class JsonParser {
         char* src;
@@ -18,10 +18,14 @@ namespace jc {
         char error[128];
         JsonAllocator* allocator;
     public:
+        JsonParser() : src(NULL), cur(NULL), allocator(NULL) {
+            error[0] = 0;
+        }
         JsonParser(JsonAllocator* allocator) : src(NULL), cur(NULL) {
             error[0] = 0;
             this->allocator = allocator;
         }
+        void init(JsonAllocator* allocator) { this->allocator = allocator; }
         
         Value* parse(char* src) {
             this->src = src;

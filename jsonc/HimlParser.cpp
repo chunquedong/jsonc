@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdexcept>
 
-using namespace jc;
+using namespace jsonc;
 
 JsonNode* HimlParser::parseObj(const char* tagName, bool isRoot) {
     JsonNode* obj = alloc(Type::Object);

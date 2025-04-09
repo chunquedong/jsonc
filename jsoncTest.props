@@ -1,4 +1,4 @@
-name = jsonc
+name = jsoncTest
 summary = Compress JSON to binary format
 outType = exe
 version = 2.0

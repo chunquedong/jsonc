@@ -8,7 +8,7 @@
 #include "jcompress.hpp"
 #include <stdlib.h>
 
-using namespace jc;
+using namespace jsonc;
 
 
 static void writeSize(std::ostream &out, uint8_t type, int64_t val) {

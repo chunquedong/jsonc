@@ -13,7 +13,9 @@
 #include <string>
 #include <string.h>
 
-namespace jc {
+#define jsonc jsonc
+
+namespace jsonc {
 
     class Value;
     struct JsonNode;
@@ -48,6 +50,10 @@ namespace jc {
         Value* operator*() const;
         Value* operator->() const;
         const char* get_name() const;
+        
+        void next() { operator++(); }
+        bool not_eq(const JsonIterator& x) const { return operator!=(x); };
+        Value* get() const { return operator*(); }
     };
 
     class Value {
@@ -146,25 +152,25 @@ namespace jc {
         }
 
         JsonNode* alloc_str(const char* s) {
-            JsonNode* value = allocNode(jc::Type::String);
+            JsonNode* value = allocNode(jsonc::Type::String);
             value->set_str(strdup(s));
             return value;
         }
 
         JsonNode* alloc_float(double s) {
-            JsonNode* value = allocNode(jc::Type::Float);
+            JsonNode* value = allocNode(jsonc::Type::Float);
             value->set_float(s);
             return value;
         }
 
         JsonNode* alloc_int(int64_t s) {
-            JsonNode* value = allocNode(jc::Type::Integer);
+            JsonNode* value = allocNode(jsonc::Type::Integer);
             value->set_int(s);
             return value;
         }
 
         JsonNode* alloc_bool(bool s) {
-            JsonNode* value = allocNode(jc::Type::Boolean);
+            JsonNode* value = allocNode(jsonc::Type::Boolean);
             value->set_bool(s);
             return value;
         }

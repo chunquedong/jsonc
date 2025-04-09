@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdexcept>
 
-using namespace jc;
+using namespace jsonc;
 
 JsonNode* JsonParser::parseObj() {
     JsonNode* obj = alloc(Type::Object);

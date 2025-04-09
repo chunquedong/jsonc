@@ -18,7 +18,7 @@
 #include <cstring>
 #include "jparser.hpp"
 
-namespace jc {
+namespace jsonc {
 
 enum jc_type {
     jc_primi = 0,//0:null, 1:true, 2:false

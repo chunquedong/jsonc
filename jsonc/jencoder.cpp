@@ -8,7 +8,7 @@
 #include "jencoder.hpp"
 #include <stdlib.h>
 
-using namespace jc;
+using namespace jsonc;
 
 void JEncoder::fillEmpty(int size) {
     buffer.resize(buffer.size()+size);

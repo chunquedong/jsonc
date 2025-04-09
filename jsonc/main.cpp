@@ -12,7 +12,7 @@
 #include <time.h>
 #include <fstream>
 
-using namespace jc;
+using namespace jsonc;
 
 #define LOOP_TIMES 1000
 

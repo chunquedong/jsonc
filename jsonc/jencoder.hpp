@@ -18,7 +18,7 @@
 #include <cstring>
 #include "jparser.hpp"
 
-namespace jc {
+namespace jsonc {
 
 class JEncoder {
     std::map<const std::string, size_t> stringTable;

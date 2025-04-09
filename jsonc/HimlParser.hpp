@@ -10,7 +10,7 @@
 
 #include "jvalue.hpp"
 
-namespace jc {
+namespace jsonc {
 
     /*
     * HIML is a JSON like text format
@@ -22,10 +22,14 @@ namespace jc {
         JsonAllocator* allocator;
         char *delayStrTerminate;
     public:
+        HimlParser() : src(NULL), cur(NULL), delayStrTerminate(NULL), allocator(NULL) {
+            error[0] = 0;
+        }
         HimlParser(JsonAllocator* allocator) : src(NULL), cur(NULL), delayStrTerminate(NULL) {
             error[0] = 0;
             this->allocator = allocator;
         }
+        void init(JsonAllocator* allocator) { this->allocator = allocator; }
         
         Value* parse(char* src) {
             this->src = src;
