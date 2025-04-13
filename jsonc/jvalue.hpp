@@ -13,7 +13,6 @@
 #include <string>
 #include <string.h>
 
-#define jsonc jsonc
 
 namespace jsonc {
 
@@ -177,5 +176,6 @@ namespace jsonc {
     };
 }//ns
 
+namespace jc = jsonc;
 
 #endif /* jValue_hpp */

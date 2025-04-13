@@ -11,6 +11,33 @@
 
 using namespace jsonc;
 
+Value* HimlParser::parse(char* src) {
+    this->src = src;
+    cur = src;
+    JsonNode* obj;
+    if (insertTopLevelObject) {
+        obj = parseObj(NULL, true);
+    }
+    else {
+        JsonNode* name = parseVal();
+        if (name == nullptr) {
+            return nullptr;
+        }
+        obj = name;
+        if (name->type() == Type::String) {
+            skipWhitespace();
+            if (*cur == '{') {
+                obj = parseObj(name->as_str());
+            }
+        }
+    }
+    if (delayStrTerminate && delayStrTerminate < cur) {
+        *delayStrTerminate = 0;
+        delayStrTerminate = NULL;
+    }
+    return obj;
+}
+
 JsonNode* HimlParser::parseObj(const char* tagName, bool isRoot) {
     JsonNode* obj = alloc(Type::Object);
     obj->value.child = NULL;

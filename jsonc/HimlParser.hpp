@@ -22,6 +22,7 @@ namespace jsonc {
         JsonAllocator* allocator;
         char *delayStrTerminate;
     public:
+        bool insertTopLevelObject = false;
         HimlParser() : src(NULL), cur(NULL), delayStrTerminate(NULL), allocator(NULL) {
             error[0] = 0;
         }
@@ -31,16 +32,7 @@ namespace jsonc {
         }
         void init(JsonAllocator* allocator) { this->allocator = allocator; }
         
-        Value* parse(char* src) {
-            this->src = src;
-            cur = src;
-            JsonNode* obj = parseObj(NULL, true);
-            if (delayStrTerminate && delayStrTerminate < cur) {
-                *delayStrTerminate = 0;
-                delayStrTerminate = NULL;
-            }
-            return obj;
-        }
+        Value* parse(char* src);
 
         const char* get_error() { return error; }
         

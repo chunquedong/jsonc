@@ -96,9 +96,8 @@ value = JEncoder::decode(buffer, length);
 ## HiML parser
 HiML is a JSON like data format for serialization.
 ```
-//comment
-name = form
 Pane {
+    //comment
     x = 1
     y = 2
     Button {
@@ -120,7 +119,6 @@ Pane {
 - no data type, metadata in mind
 - quotes is options
 - comma is options
-- no braces for top level object
 - comment by //
 
 
