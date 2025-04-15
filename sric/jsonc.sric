@@ -13,7 +13,7 @@ extern enum Type : UInt8 {
 
 extern struct JsonIterator {
     fun next();
-    fun not_eq(x: &const JsonIterator) const : Bool;
+    fun noteq(x: &const JsonIterator) const : Bool;
     fun get() const: raw* Value;
     fun get_name() const: raw*? const Int8;
 }

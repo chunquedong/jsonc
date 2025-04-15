@@ -51,7 +51,7 @@ namespace jsonc {
         const char* get_name() const;
         
         void next() { operator++(); }
-        bool not_eq(const JsonIterator& x) const { return operator!=(x); };
+        bool noteq(const JsonIterator& x) const { return operator!=(x); };
         Value* get() const { return operator*(); }
     };
 
