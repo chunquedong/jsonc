@@ -83,11 +83,16 @@ extern struct JsonParser {
     fun init( allocator: raw* JsonAllocator);
     fun parse(src: raw* Int8): raw*? Value;
     fun get_error(): raw* Int;
+    fun get_end(): raw* Int8;
+    fun has_error(): Bool;
 }
 
 //@#include "HimlParser.hpp"
 extern struct HimlParser {
+    var insertTopLevelObject: Bool = false;
     fun init( allocator: raw* JsonAllocator);
     fun parse(src: raw* Int8): raw*? Value;
     fun get_error(): raw* Int;
+    fun get_end(): raw* Int8;
+    fun has_error(): Bool;
 }

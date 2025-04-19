@@ -33,6 +33,8 @@ namespace jsonc {
             return parseVal();
         }
 
+        char* get_end() { return cur; }
+        bool has_error() { return error[0] == 0; }
         const char* get_error() { return error; }
         
     private:
