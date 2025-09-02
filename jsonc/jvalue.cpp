@@ -208,7 +208,7 @@ bool JsonNode::set(const char* key, JsonNode* val) {
         if (strcmp(p.get_name(), key) == 0) {
             return false;
         }
-        ++p;
+        //++p;
     }
 
     insert_pair(key, val);
@@ -361,7 +361,7 @@ static bool strNeedEscape(const char* raw) {
         switch (*c)
         {
         case '"':
-        case '//':
+        case '\\':
         case ' ':
         case '\r':
         case '\n':

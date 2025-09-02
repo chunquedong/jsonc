@@ -23,7 +23,7 @@ namespace jsonc {
         char *delayStrTerminate;
     public:
         bool insertTopLevelObject = false;
-        HimlParser() : src(NULL), cur(NULL), delayStrTerminate(NULL), allocator(NULL) {
+        HimlParser() : src(NULL), cur(NULL), allocator(NULL), delayStrTerminate(NULL) {
             error[0] = 0;
         }
         HimlParser(JsonAllocator* allocator) : src(NULL), cur(NULL), delayStrTerminate(NULL) {

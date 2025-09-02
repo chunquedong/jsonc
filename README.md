@@ -70,7 +70,7 @@ value0->to_json(jstr);
 puts(jstr.c_str());
 ```
 
-#### Compress
+#### Compress (version 1)
 ```
 //write
 JCWriter c;
@@ -82,7 +82,7 @@ JCReader r(buffer, length, &allocator);
 Value* value = r.read();
 ```
 
-#### Encode
+#### Encode (version 3)
 ```
 //write
 JEncoder encoder;
