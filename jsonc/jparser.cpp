@@ -74,23 +74,38 @@ begin:
         return parseArray();
     case 't': {
         //"true"
-        cur += 4;
-        JsonNode*val = alloc(Type::Boolean);
-        val->value.b = true;
-        return val;
+        if (cur[1] == 'r' && cur[2] == 'u' && cur[3] == 'e') {
+            cur += 4;
+            JsonNode*val = alloc(Type::Boolean);
+            val->value.b = true;
+            return val;
+        }
+        else {
+            goto error;
+        }
     }
     case 'f': {
         //"false"
-        cur += 5;
-        JsonNode*val = alloc(Type::Boolean);
-        val->value.b = false;
-        return val;
+        if (cur[1] == 'a' && cur[2] == 'l' && cur[3] == 's' && cur[4] == 'e') {
+            cur += 5;
+            JsonNode*val = alloc(Type::Boolean);
+            val->value.b = false;
+            return val;
+        }
+        else {
+            goto error;
+        }
     }
     case 'n': {
         //"null"
-        cur += 4;
-        JsonNode*val = alloc(Type::Null);
-        return val;
+        if (cur[1] == 'u' && cur[2] == 'l' && cur[3] == 'l') {
+            cur += 4;
+            JsonNode*val = alloc(Type::Null);
+            return val;
+        }
+        else {
+            goto error;
+        }
     }
     case '\t':
     case '\n':
@@ -100,12 +115,14 @@ begin:
         goto begin;
     }
     default:
-        if (*cur == 0) snprintf(error, 128, "Unexpected end of stream");
-        else {
-            snprintf(error, 128, "Unexpected token '%c' at %s", *cur, cur);
-        }
-        return NULL;
+        break;
     }
+error:
+    if (*cur == 0) snprintf(error, 128, "Unexpected end of stream");
+    else {
+        snprintf(error, 128, "Unexpected token '%c' at %s", *cur, cur);
+    }
+    return NULL;
 }
 
 JsonNode* JsonParser::parseNum() {
