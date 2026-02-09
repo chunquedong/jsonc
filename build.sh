@@ -1,4 +1,4 @@
 
-fan fmake libjsonc.props
-fan fmake libjsonc.props -debug
+fmake libjsonc.props
+fmake libjsonc.props -debug
 
